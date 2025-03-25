@@ -114,7 +114,7 @@ jobs:
         with:
           package-name: ${{ github.event.repository.name }}
           package-type: container
-          owner: ${{ secrets.MACHINE_USER }}
+          owner: ${{ vars.GHCR_OWNER }}
           min-versions-to-keep: 2 # Keeps the 2 most recent versions (latest and previous)
           token: ${{ secrets.MACHINE_PAT }}
 
