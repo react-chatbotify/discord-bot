@@ -25,16 +25,16 @@ echo "Pulling image: $APPLICATION_IMAGE"
 docker pull "$APPLICATION_IMAGE"
 
 # Prepares env and compose files based on environment
-if [ "$DEPLOY_ENV" == "prod" ]; then
+if [ "$DEPLOY_ENV" == "production" ]; then
   OVERRIDE_FILE="$COMPOSE_PATH/docker-compose.prod.yml"
   COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
   ENV_FILE="--env-file .env.prod"
-elif [ "$DEPLOY_ENV" == "dev" ]; then
+elif [ "$DEPLOY_ENV" == "development" ]; then
   OVERRIDE_FILE="$COMPOSE_PATH/docker-compose.dev.yml"
   COMPOSE_FILES="-f docker-compose.yml -f docker-compose.dev.yml"
   ENV_FILE="--env-file .env.development"
 else
-  echo "[ERROR] Unknown DEPLOY_ENV: $DEPLOY_ENV. Expected 'dev' or 'prod'."
+  echo "[ERROR] Unknown DEPLOY_ENV: $DEPLOY_ENV. Expected 'development' or 'production'."
   exit 1
 fi
 
