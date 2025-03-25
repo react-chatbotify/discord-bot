@@ -85,7 +85,7 @@ jobs:
       - name: Backup existing image
         # Pulls the current image using the target tag and backup it with a previous tag if it exists.
         run: |
-          OWNER="${{ github.repository_owner }}"
+          OWNER="${{ vars.GHCR_OWNER }}"
           REPO="${{ github.event.repository.name }}"
           IMAGE="ghcr.io/$OWNER/$REPO:${{ steps.vars.outputs.TARGET_TAG }}"
           BACKUP_IMAGE="ghcr.io/$OWNER/$REPO:${{ steps.vars.outputs.BACKUP_TAG }}"
@@ -101,7 +101,7 @@ jobs:
       - name: Build and push new image
         # Builds a new Docker image with the target tag and pushes it to GHCR.
         run: |
-          OWNER="${{ github.repository_owner }}"
+          OWNER="${{ vars.GHCR_OWNER }}"
           REPO="${{ github.event.repository.name }}"
           TARGET_IMAGE="ghcr.io/$OWNER/$REPO:${{ steps.vars.outputs.TARGET_TAG }}"
           echo "Building image with tag $TARGET_IMAGE"
