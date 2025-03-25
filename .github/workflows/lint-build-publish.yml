@@ -66,16 +66,6 @@ jobs:
           username: ${{ secrets.MACHINE_USER }}
           password: ${{ secrets.MACHINE_PAT }}
 
-      - name: Cleanup Old GHCR Image Digests
-        # Cleans up old images
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: ${{ github.event.repository.name }}
-          package-type: container
-          owner: ${{ github.repository_owner }}
-          min-versions-to-keep: 2 # Keeps the 2 most recent versions (latest and previous)
-          token: ${{ secrets.MACHINE_PAT }}
-
       - name: Determine deployment variables
         id: vars
         # Sets Docker image tags for production or development based on branch name.
@@ -117,6 +107,16 @@ jobs:
           echo "Building image with tag $TARGET_IMAGE"
           docker build -t $TARGET_IMAGE .
           docker push $TARGET_IMAGE
+
+      - name: Cleanup Old GHCR Image Digests
+        # Cleans up old images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: container
+          owner: ${{ secrets.MACHINE_USER }}
+          min-versions-to-keep: 2 # Keeps the 2 most recent versions (latest and previous)
+          token: ${{ secrets.MACHINE_PAT }}
 
   trigger-deploy:
     # Calls the deploy workflow after building is complete.
