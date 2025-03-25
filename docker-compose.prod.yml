@@ -1,0 +1,6 @@
+services:
+  discord-bot:
+    image: ${APPLICATION_IMAGE}
+    env_file: .env.prod
+  mysql:
+    env_file: .env.prod

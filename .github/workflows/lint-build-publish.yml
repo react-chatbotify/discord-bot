@@ -1,0 +1,129 @@
+name: Lint, Build & Publish
+run-name: Lint, Build & Publish
+
+on:
+  workflow_call:
+    inputs:
+      target_env:
+        required: true
+        type: string
+
+jobs:
+  lint:
+    name: Run Lint
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_env }}
+    steps:
+      - name: Checkout code
+        # Checks out the repository code.
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        # Installs Python 3.13 and sets it as the default python3.
+        run: |
+          sudo add-apt-repository ppa:deadsnakes/ppa
+          sudo apt-get update
+          sudo apt-get install python3.13 python3.13-venv -y
+          sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 1
+          sudo update-alternatives --set python3 /usr/bin/python3.13
+
+      - name: Install dependencies
+        # Creates a virtual environment and installs development dependencies.
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements-dev.txt
+
+      - name: Run Linter
+        # Activates the environment and runs lint checks via hatch.
+        run: |
+          source venv/bin/activate
+          hatch run lint
+
+  build:
+    needs: lint
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_env }}
+    outputs:
+      # Exposes the TARGET_TAG output from the 'vars' step.
+      target_tag: ${{ steps.vars.outputs.TARGET_TAG }}
+    steps:
+      - name: Checkout repository
+        # Checks out the code again (for this separate job).
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        # Prepares Docker Buildx for building multi-platform images.
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        # Logs into GitHub Container Registry using provided credentials.
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.MACHINE_USER }}
+          password: ${{ secrets.MACHINE_PAT }}
+
+      - name: Cleanup Old GHCR Image Digests
+        # Cleans up old images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: container
+          owner: ${{ secrets.MACHINE_USER }}
+          min-versions-to-keep: 2 # Keeps the 2 most recent versions (latest and previous)
+          token: ${{ secrets.MACHINE_PAT }}
+
+      - name: Determine deployment variables
+        id: vars
+        # Sets Docker image tags for production or development based on branch name.
+        run: |
+          BRANCH_NAME=${GITHUB_REF##*/}
+          if [ "$BRANCH_NAME" = "main" ]; then
+            echo "TARGET_TAG=prod-latest" >> $GITHUB_OUTPUT
+            echo "BACKUP_TAG=prod-previous" >> $GITHUB_OUTPUT
+          elif [ "$BRANCH_NAME" = "development" ]; then
+            echo "TARGET_TAG=dev-latest" >> $GITHUB_OUTPUT
+            echo "BACKUP_TAG=dev-previous" >> $GITHUB_OUTPUT
+          else
+            echo "Unsupported branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+      - name: Backup existing image
+        # Pulls the current image using the target tag and backup it with a previous tag if it exists.
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          IMAGE="ghcr.io/$OWNER/$REPO:${{ steps.vars.outputs.TARGET_TAG }}"
+          BACKUP_IMAGE="ghcr.io/$OWNER/$REPO:${{ steps.vars.outputs.BACKUP_TAG }}"
+          echo "Attempting to pull existing image: $IMAGE"
+          if docker pull $IMAGE; then
+            echo "Image found. Backing it up as $BACKUP_IMAGE"
+            docker tag $IMAGE $BACKUP_IMAGE
+            docker push $BACKUP_IMAGE
+          else
+            echo "No existing image to backup."
+          fi
+
+      - name: Build and push new image
+        # Builds a new Docker image with the target tag and pushes it to GHCR.
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          TARGET_IMAGE="ghcr.io/$OWNER/$REPO:${{ steps.vars.outputs.TARGET_TAG }}"
+          echo "Building image with tag $TARGET_IMAGE"
+          docker build -t $TARGET_IMAGE .
+          docker push $TARGET_IMAGE
+
+  trigger-deploy:
+    # Calls the deploy workflow after building is complete.
+    needs: build
+    name: Deploy
+    uses: ./.github/workflows/deploy.yml
+    with:
+      target_tag: ${{ needs.build.outputs.target_tag }}
+      target_env: ${{ inputs.target_env }}
+    secrets: inherit

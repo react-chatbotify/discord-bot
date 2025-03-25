@@ -1,0 +1,7 @@
+services:
+  discord-bot:
+    build: .
+    command: sh -c "pip install watchdog && watchmedo auto-restart --directory=/app/src/bot --patterns='*.py' --recursive -- python -m bot.main"
+    env_file: .env.local
+  mysql:
+    env_file: .env.local

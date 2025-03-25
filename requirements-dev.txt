@@ -1,0 +1,12 @@
+black==25.1.0
+hatch==1.14.0
+mypy-extensions==1.0.0
+pathspec==0.12.1
+pre_commit==4.2.0
+pluggy==1.5.0
+Pygments==2.19.1
+ruff==0.11.2
+tomli_w==1.2.0
+tomlkit==0.13.2
+virtualenv==20.29.3
+darglint==1.8.1

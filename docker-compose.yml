@@ -1,0 +1,27 @@
+services:
+  discord-bot:
+    container_name: rcb-discord-bot
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: rcb-tickets-database
+    restart: always
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: 'exit 0'
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
