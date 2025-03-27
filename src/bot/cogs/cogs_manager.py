@@ -33,6 +33,7 @@ class CogsManager:
 
         """
         self.bot = bot
+        self.cogs = cogs_manager_config.loaded_modules
 
     async def load_all_cogs(self):
         """
@@ -41,7 +42,7 @@ class CogsManager:
         Iterates over the configured list of cog modules and attempts to
         load each one. Logs success or failure to the console.
         """
-        for cog in cogs_manager_config.loaded_modules:
+        for cog in self.cogs:
             cog = f"bot.cogs.{cog}"
             try:
                 await self.bot.load_extension(cog)
