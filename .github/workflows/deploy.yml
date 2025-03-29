@@ -30,8 +30,26 @@ jobs:
           # Add the server to known_hosts to avoid authenticity prompts.
           ssh-keyscan -H ${{ secrets.DEPLOYMENT_SERVER }} >> ~/.ssh/known_hosts
 
+      - name: Upload deployment files to server
+        # Creates project directory and uploads required files to server
+        run: |
+          if [ "${{ inputs.target_tag }}" = "prod-latest" ]; then
+            OVERRIDE_SOURCE="docker-compose.prod.yml"
+          else
+            OVERRIDE_SOURCE="docker-compose.dev.yml"
+          fi
+
+          ENV_CONTENT="${{ secrets.PROJECT_ENV_FILE }}"
+          echo "$ENV_CONTENT" > .env
+
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "mkdir -p /opt/rcb-deployments/${{ vars.PROJECT_NAME }}"
+          scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.yml
+          scp -o StrictHostKeyChecking=no $OVERRIDE_SOURCE ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.override.yml
+          scp -o StrictHostKeyChecking=no .env ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/.env
+          scp -o StrictHostKeyChecking=no scripts/deploy.sh ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/deploy.sh
+
+
       - name: Deploy to VPS
-        if: ${{ inputs.target_tag == 'prod-latest' }}
         # Deploys to VPS.
         run: |
           OWNER="${{ vars.GHCR_OWNER }}"
@@ -39,9 +57,9 @@ jobs:
           IMAGE="ghcr.io/$OWNER/$REPO:${{ inputs.target_tag }}"
           echo "Deploying $IMAGE to VPS..."
           ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "\
-            export PROJECT_NAME='rcb-discord-bot'
+            export PROJECT_NAME='${{ vars.PROJECT_NAME }}' && \
             export DEPLOY_ENV='${{ inputs.target_env }}' && \
             export GHCR_USER='${{ secrets.MACHINE_USER }}' && \
             export GHCR_PAT='${{ secrets.MACHINE_PAT }}' && \
             export APPLICATION_IMAGE='$IMAGE' && \
-            /opt/rcb-deployments/discord-bot/deploy.sh $IMAGE"
+            /opt/rcb-deployments/${{ vars.PROJECT_NAME }}/deploy.sh $IMAGE"
