@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.target_env }}
     steps:
+      - name: Checkout code
+        # Checks out the repository code.
+        uses: actions/checkout@v4
+
       - name: Set up SSH key
         # Sets up the SSH key for the server.
         run: |
