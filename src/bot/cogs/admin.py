@@ -15,6 +15,7 @@ from discord.ext import commands
 from bot.button_loaders.common import CommonButtonLoader
 from bot.cogs.cogs_manager import CogsManager
 from bot.core.admin import process_list_modules, process_sync_commands
+from bot.utils.console_logger import console_logger
 from bot.utils.decorators import admin_only
 
 
@@ -148,6 +149,21 @@ class AdminCog(commands.Cog):
         """
         ctx = await commands.Context.from_interaction(interaction)
         await process_sync_commands(ctx)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: discord.Guild):
+        """
+        Trigger when bot joins a server.
+
+        Args:
+            guild (discord.Guild): The server that the bot is joining.
+
+        """
+        try:
+            await self.bot.tree.sync(guild=guild)
+            console_logger.info(f"Synced commands for guild: {guild.name} ({guild.id})")
+        except Exception as e:
+            console_logger.info(f"Failed to sync commands for guild {guild.name}: {e}")
 
 
 async def setup(bot: commands.Bot):
