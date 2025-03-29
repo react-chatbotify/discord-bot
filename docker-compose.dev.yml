@@ -1,3 +1,5 @@
+# development environment overrides
+
 services:
   discord-bot:
     image: ${APPLICATION_IMAGE}

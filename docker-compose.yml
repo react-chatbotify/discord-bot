@@ -1,3 +1,5 @@
+# base compose file
+
 services:
   discord-bot:
     container_name: rcb-discord-bot
