@@ -34,17 +34,16 @@ jobs:
         # Creates project directory and uploads required files to server
         run: |
           if [ "${{ inputs.target_tag }}" = "prod-latest" ]; then
-            OVERRIDE_SOURCE="docker-compose.prod.yml"
+            scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.override.yml
+            scp -o StrictHostKeyChecking=no honeycomb.toml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/honeycomb.toml
           else
-            OVERRIDE_SOURCE="docker-compose.dev.yml"
+            scp -o StrictHostKeyChecking=no docker-compose.dev.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.override.yml
           fi
 
-          ENV_CONTENT="${{ secrets.APPLICATION_ENV_FILE }}"
-          echo "$ENV_CONTENT" > .env
+          echo "$APPLICATION_ENV_FILE" > .env
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "mkdir -p /opt/rcb-deployments/${{ vars.PROJECT_NAME }}"
           scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.yml
-          scp -o StrictHostKeyChecking=no $OVERRIDE_SOURCE ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.override.yml
           scp -o StrictHostKeyChecking=no .env ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/.env
           scp -o StrictHostKeyChecking=no scripts/deploy.sh ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/deploy.sh
 

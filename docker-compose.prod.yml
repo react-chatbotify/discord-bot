@@ -6,3 +6,14 @@ services:
     env_file: .env.prod
   mysql:
     env_file: .env.prod
+
+  # add logging in production environment
+  honeycomb-agent:
+    image: honeycombio/honeycomb-agent:latest
+    container_name: honeycomb-agent
+    volumes:
+      - ./honeycomb.toml:/etc/honeycomb/honeycomb.toml:ro
+    ports:
+      - "514:514"
+    networks:
+      - app-network
