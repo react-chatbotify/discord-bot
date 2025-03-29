@@ -58,25 +58,25 @@ class CommonConfig(BaseSettings):
         ),
     }
     recurring_sponsor_tiers: Dict[str, SponsorTier] = {
-        "bronze": SponsorTier(
-            name="Bronze",
+        "lite": SponsorTier(
+            name="Lite",
             emoji="🥉",
-            role_id=int(os.getenv("BRONZE_SPONSOR_ROLE_ID", 0)),
+            role_id=int(os.getenv("LITE_SPONSOR_ROLE_ID", 0)),
         ),
-        "silver": SponsorTier(
-            name="Silver",
+        "plus": SponsorTier(
+            name="Plus",
             emoji="🥈",
-            role_id=int(os.getenv("SILVER_SPONSOR_ROLE_ID", 0)),
+            role_id=int(os.getenv("PLUS_SPONSOR_ROLE_ID", 0)),
         ),
-        "gold": SponsorTier(
-            name="Gold",
+        "pro": SponsorTier(
+            name="Pro",
             emoji="🥇",
-            role_id=int(os.getenv("GOLD_SPONSOR_ROLE_ID", 0)),
+            role_id=int(os.getenv("PRO_SPONSOR_ROLE_ID", 0)),
         ),
-        "platinum": SponsorTier(
-            name="Platinum",
+        "ultra": SponsorTier(
+            name="Ultra",
             emoji="🏆",
-            role_id=int(os.getenv("PLATINUM_SPONSOR_ROLE_ID", 0)),
+            role_id=int(os.getenv("ULTRA_SPONSOR_ROLE_ID", 0)),
         ),
     }
 

@@ -44,7 +44,7 @@ class MainMenuEmbed:
                 description=(
                     "Looking to expedite your issue, seeking suggestions, or perhaps another opinion? "
                     "Click the button below to open a premium support ticket!\n\n"
-                    "Available for **Bronze, Silver, Gold, and Platinum Sponsors**."
+                    "Available for **Lite, Plus, Pro, and Ultra Sponsors**."
                 ),
                 color=discord.Color.blue().value,
                 footer_text="Support Ticket System",

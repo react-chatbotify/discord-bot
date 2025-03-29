@@ -39,7 +39,7 @@ jobs:
             OVERRIDE_SOURCE="docker-compose.dev.yml"
           fi
 
-          ENV_CONTENT="${{ secrets.PROJECT_ENV_FILE }}"
+          ENV_CONTENT="${{ secrets.APPLICATION_ENV_FILE }}"
           echo "$ENV_CONTENT" > .env
 
           ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "mkdir -p /opt/rcb-deployments/${{ vars.PROJECT_NAME }}"

@@ -17,7 +17,7 @@ class SponsorTier(BaseModel):
     emoji representation, and corresponding Discord role ID.
 
     Attributes:
-        name (str): The name of the sponsor tier (e.g., "Bronze", "Platinum").
+        name (str): The name of the sponsor tier (e.g., "Lite", "Ultra").
         emoji (str): A short emoji string representing the tier.
         role_id (int): The Discord role ID associated with this tier.
 
