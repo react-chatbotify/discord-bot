@@ -25,7 +25,7 @@ async def process_list_modules(interaction: discord.Interaction, bot: commands.B
     """
     # Get list of loaded extensions
     loaded_cogs = list(bot.extensions.keys())
-    parsed_loaded_cogs = list(map(lambda name: name.split('.')[-1], loaded_cogs))
+    parsed_loaded_cogs = list(map(lambda name: name.split(".")[-1], loaded_cogs))
 
     # Get list of all available cogs from the manager
     available_cogs = cogs_manager.cogs

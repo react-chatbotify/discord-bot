@@ -121,7 +121,6 @@ class AdminCog(commands.Cog):
         message = await self.cogs_manager.enable_cog(module)
         await interaction.response.send_message(message, ephemeral=True)
 
-
     @module_group.command(name="disable", description="Disable a specific bot module")
     @app_commands.describe(module="The name of the module to disable")
     @app_commands.autocomplete(module=_module_name_autocomplete)
