@@ -67,11 +67,7 @@ Python
 // todo: the team will be expanded once members are confirmed
 
 ### Contributing
-If you are looking to contribute to the project, you may find the [**Developer Guide**](https://github.com/react-chatbotify/discord-bot/blob/main/docs/DeveloperGuide.md) useful.
-
-In general, the forking workflow is encouraged and you may open a pull request with clear descriptions on the changes and what they are intended to do (enhancement, bug fixes etc). Alternatively, you may simply raise bugs or suggestions by opening an [**issue**](https://github.com/react-chatbotify/discord-bot/issues) or raising it up on [**discord**](https://discord.gg/6R4DK4G5Zh).
-
-Note: Templates have been created for pull requests and issues to guide you in the process.
+If you are looking to contribute to the project, please refer to the [**Contributing Guide**](https://github.com/React-ChatBotify/discord-bot/blob/main/CONTRIBUTING.md).
 
 ### Support
 If there are any questions pertaining to the application itself (usage or implementation wise), you may create an [**issue**](https://github.com/react-chatbotify/discord-bot/issues), raise it up on [**discord**](https://discord.gg/6R4DK4G5Zh), or drop an email to: **cjtanjin@gmail.com.**

@@ -16,7 +16,7 @@ packages = ["src/bot"]
 [tool.hatch.envs.default.scripts]
 lint = "darglint ./src/bot && ruff check --fix ./src/bot && black --check ./src/bot"
 format = "ruff check --fix ./src/bot && black ./src/bot"
-start = "docker compose up -d --build"
+start = "docker compose --env-file .env.local up -d --build"
 
 [tool.hatch.envs.dev]
 dependencies = ["pre-commit"]

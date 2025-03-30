@@ -36,7 +36,41 @@ Before diving into the rest of the contents in our developer guide, the followin
 
 ## Setup
 
-Setting up the project is relatively simple. Before you begin, ensure that you have **at least Python 3.10 and Docker** installed.
+Setting up the project can be a little involved if this is your first time (mostly because you have to create a **discord bot**). To begin, head over to the [**discord developer portal**]() and create a new bot. Then, visit the **installation** tab on the left and ensure the following default permissions are given to the bot:
+<details> <summary>Click to view permissions</summary>
+    - Add Reactions
+    - Attach Files
+    - Ban Members
+    - Create Events
+    - Create Polls
+    - Create Private Threads
+    - Create Public Threads
+    - Embed Links
+    - Kick Members
+    - Manage Channels
+    - Manage Events
+    - Manage Messages
+    - Manage Roles
+    - Manage Threads
+    - Mention Everyone
+    - Moderate Members
+    - Read Message History
+    - Send Messages
+    - Send Messages in Threads
+    - Use External Emojis
+    - Use External Stickers
+    - Use Slash Commands
+    - View Audit Log
+    - View Channels
+    - View Server Insights
+    - View Server Subscription Insights
+<details>
+
+Within the **bot** tab, ensure that **presence intent**, **server members intent** and **message content intent** are all enabled. These should be sufficient to create the required discord bot.
+
+Next, we need to setup the discord development server (this is where you'll invite the bot and do all your testing/debugging). Thankfully, the server templates feature makes this step a lot easier. Simply use the [**template provided here**](https://discord.new/UWFcwJYa45bX) to create a discord server for testing your bot. Once that's done, you may proceed to the repository setup.
+
+To setup the project repository proper, ensure that you have **at least Python 3.10 and Docker** installed.
 1) Fork the [project repository](https://github.com/react-chatbotify/discord-bot).
 2) Clone the **forked project** into your desired directory with:
     ```
@@ -46,7 +80,8 @@ Setting up the project is relatively simple. Before you begin, ensure that you h
     ```
     pip install -r requirements.txt -r requirements-dev.txt
     ```
-4) Once installations are complete, you may launch the project with:
+4) Populate the *.env.local* file with the necessary values (e.g. bot token, channel ids)
+5) Once installations are complete and your env file is setup, you may launch the project with:
     ```
     hatch run start
     ```
