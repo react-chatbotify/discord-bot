@@ -51,7 +51,7 @@ docker compose -p "$PROJECT_NAME" $COMPOSE_FILES down
 
 # Brings up new containers
 echo "Starting docker-compose for environment: $DEPLOY_ENV..."
-docker compose -p "$PROJECT_NAME" $ENV_FILE $COMPOSE_FILES up -d
+docker compose -p "$PROJECT_NAME" $ENV_FILE $COMPOSE_FILES up -d --build
 
 # Cleans up unused docker images
 echo "Pruning unused Docker images..."
