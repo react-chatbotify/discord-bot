@@ -64,7 +64,6 @@ jobs:
           echo "Deploying $IMAGE to VPS..."
           ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "\
             export PROJECT_NAME='${{ vars.PROJECT_NAME }}' && \
-            export DEPLOY_ENV='${{ inputs.target_env }}' && \
             export GHCR_USER='${{ secrets.MACHINE_USER }}' && \
             export GHCR_PAT='${{ secrets.MACHINE_PAT }}' && \
             export APPLICATION_IMAGE='$IMAGE' && \
