@@ -159,5 +159,8 @@ class EmbedsManager:
         if isinstance(ctx_or_interaction, commands.Context):
             return await ctx_or_interaction.send(**kwargs)
 
-        await ctx_or_interaction.response.send_message(**kwargs)
-        return await ctx_or_interaction.original_response()
+        if not ctx_or_interaction.response.is_done():
+            await ctx_or_interaction.response.send_message(**kwargs)
+            return await ctx_or_interaction.original_response()
+        else:
+            return await ctx_or_interaction.followup.send(**kwargs)
