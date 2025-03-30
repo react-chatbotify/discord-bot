@@ -37,6 +37,8 @@ jobs:
       - name: Upload deployment files to server
         # Creates project directory and uploads required files to server
         run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "mkdir -p /opt/rcb-deployments/${{ vars.PROJECT_NAME }}"
+
           if [ "${{ inputs.target_tag }}" = "prod-latest" ]; then
             scp -o StrictHostKeyChecking=no docker-compose.prod.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.override.yml
             echo "${{ secrets.HONEYCOMB_CONFIG }}" > honeycomb.toml
@@ -46,10 +48,9 @@ jobs:
           fi
 
           echo "${{ secrets.APPLICATION_ENV_FILE }}" > .env
-
-          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "mkdir -p /opt/rcb-deployments/${{ vars.PROJECT_NAME }}"
-          scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.yml
           scp -o StrictHostKeyChecking=no .env ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/.env
+
+          scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/docker-compose.yml
           scp -o StrictHostKeyChecking=no scripts/deploy.sh ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }}:/opt/rcb-deployments/${{ vars.PROJECT_NAME }}/deploy.sh
           ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOYMENT_SSH_USER }}@${{ secrets.DEPLOYMENT_SERVER }} "\
             chmod +x /opt/rcb-deployments/${{ vars.PROJECT_NAME }}/deploy.sh"
