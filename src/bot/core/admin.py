@@ -25,6 +25,7 @@ async def process_list_modules(interaction: discord.Interaction, bot: commands.B
     """
     # Get list of loaded extensions
     loaded_cogs = list(bot.extensions.keys())
+    parsed_loaded_cogs = list(map(lambda name: name.split('.')[-1], loaded_cogs))
 
     # Get list of all available cogs from the manager
     available_cogs = cogs_manager.cogs
@@ -32,15 +33,14 @@ async def process_list_modules(interaction: discord.Interaction, bot: commands.B
     # Format the message
     message = "**📋 Module Status:**\n\n"
 
-    for cog_path in available_cogs:
-        cog_name = cog_path.split(".")[-1]
-        status = "✅ Enabled" if cog_path in loaded_cogs else "❌ Disabled"
+    for cog_name in available_cogs:
+        status = "✅ Enabled" if cog_name in parsed_loaded_cogs else "❌ Disabled"
         message += f"• **{cog_name}**: {status}\n"
 
     # Add total count
     message += f"\n**Total:** {len(loaded_cogs)}/{len(available_cogs)} modules enabled"
 
-    await interaction.response.send_message(message)
+    await interaction.response.send_message(message, ephemeral=True)
 
 
 async def process_sync_commands(ctx: commands.Context):
