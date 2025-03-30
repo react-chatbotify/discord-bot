@@ -18,6 +18,9 @@ from bot.core.admin import process_list_modules, process_sync_commands
 from bot.utils.console_logger import console_logger
 from bot.utils.decorators import admin_only
 
+# todo: logic should ideally all be moved into core
+# todo: currently, the bot does not persist the enabled/disabled states of modules - it'll be ideal to persist
+
 
 class AdminCog(commands.Cog):
     """
@@ -115,7 +118,9 @@ class AdminCog(commands.Cog):
             module (str): The name of the module to enable.
 
         """
-        await self.cogs_manager.enable_cog(module)
+        message = await self.cogs_manager.enable_cog(module)
+        await interaction.response.send_message(message, ephemeral=True)
+
 
     @module_group.command(name="disable", description="Disable a specific bot module")
     @app_commands.describe(module="The name of the module to disable")
@@ -131,7 +136,8 @@ class AdminCog(commands.Cog):
             module (str): The name of the module to disable.
 
         """
-        await self.cogs_manager.disable_cog(module)
+        message = await self.cogs_manager.disable_cog(module)
+        await interaction.response.send_message(message, ephemeral=True)
 
     @app_commands.command(
         name="sync_commands",
