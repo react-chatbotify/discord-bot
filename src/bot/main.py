@@ -37,25 +37,35 @@ ButtonsManager.setup(bot)
 # Initialize cog manager
 cogs_manager = CogsManager(bot)
 
+# Flag if bot startup is complete
+bot_startup_complete = False
+
 
 @bot.event
 async def on_ready():
     """
     Handle bot ready event.
     """
-    console_logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
+    # Run logic only if bot startup is incomplete
+    global bot_startup_complete
+    if not bot_startup_complete:
+        console_logger.info(f"Logged in as {bot.user} (ID: {bot.user.id})")
 
-    # Initialize DB and ticket counters
-    await init_db()
-    bot.loop.create_task(initialize_ticket_counter_table())
+        # Initialize DB and ticket counters
+        await init_db()
+        bot.loop.create_task(initialize_ticket_counter_table())
 
-    # Load all cogs
-    await cogs_manager.load_all_cogs()
+        # Load all cogs
+        await cogs_manager.load_all_cogs()
 
-    # Log readiness and available commands
-    console_logger.info(f"Bot is ready with {len(bot.tree.get_commands())} command(s) loaded:")
-    for cmd in bot.tree.get_commands():
-        console_logger.info(f"Command loaded: {cmd.name}")
+        # Log readiness and available commands
+        console_logger.info(f"Bot is ready with {len(bot.tree.get_commands())} command(s) loaded:")
+        for cmd in bot.tree.get_commands():
+            console_logger.info(f"Command loaded: {cmd.name}")
+
+        bot_startup_complete = True
+    else:
+        console_logger.info("Reconnected to Discord.")
 
 
 # Run the bot using the token from .env
