@@ -147,20 +147,23 @@ class EmbedsManager:
 
         # Dispatch the embed message based on context type.
         if channel:
-            kwargs = {"embed": embed, "view": view}
+            kwargs = {"embed": embed}
+            if view is not None:
+                kwargs["view"] = view
             if file:
                 kwargs["file"] = file
             return await channel.send(**kwargs)
 
-        kwargs = {"embed": embed, "view": view, "ephemeral": ephemeral}
+        kwargs = {"embed": embed, "ephemeral": ephemeral}
+        if view is not None:
+            kwargs["view"] = view
         if file:
             kwargs["file"] = file
 
         if isinstance(ctx_or_interaction, commands.Context):
             return await ctx_or_interaction.send(**kwargs)
 
-        if not ctx_or_interaction.response.is_done():
+        try:
             await ctx_or_interaction.response.send_message(**kwargs)
-            return await ctx_or_interaction.original_response()
-        else:
+        except Exception as e:
             return await ctx_or_interaction.followup.send(**kwargs)

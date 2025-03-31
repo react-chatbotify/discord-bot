@@ -141,6 +141,5 @@ async def _create_support_ticket(
         ],
     )
 
-    new_ticket_info_embed = NewTicketInfoEmbed
-    await new_ticket_info_embed.send(ctx_or_interaction, channel, ticket_number)
+    await NewTicketInfoEmbed.send(ctx_or_interaction, channel, ticket_number)
     return True
