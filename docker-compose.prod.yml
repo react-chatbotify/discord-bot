@@ -8,12 +8,16 @@ services:
     env_file: .env.prod
 
   # add logging in production environment
-  honeycomb-agent:
-    image: honeycombio/honeycomb-agent:latest
-    container_name: honeycomb-agent
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: rcb-discord-bot-otel-collector
+    environment:
+      HONEYCOMB_API_KEY: ${HONEYCOMB_API_KEY}
+      HONEYCOMB_DATASET: ${HONEYCOMB_DATASET}
     volumes:
-      - ./honeycomb.toml:/etc/honeycomb/honeycomb.toml:ro
+      - ./otel-config.yaml:/etc/otel/config.yaml:ro
+    command: ["--config", "/etc/otel/config.yaml"]
     ports:
-      - "514:514"
+      - "4317:4317"
     networks:
       - app-network
