@@ -165,5 +165,5 @@ class EmbedsManager:
 
         try:
             await ctx_or_interaction.response.send_message(**kwargs)
-        except Exception as e:
+        except Exception:
             return await ctx_or_interaction.followup.send(**kwargs)
