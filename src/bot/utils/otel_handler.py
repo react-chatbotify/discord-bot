@@ -25,6 +25,8 @@ from opentelemetry.sdk.trace.export import (
     ConsoleSpanExporter,
 )
 
+from bot.config.logging import logging_config
+
 trace.set_tracer_provider(TracerProvider())
 trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
 
@@ -37,6 +39,6 @@ logger_provider = LoggerProvider(
 )
 set_logger_provider(logger_provider)
 
-exporter = OTLPLogExporter(endpoint="otel-collector:4317", insecure=True)
+exporter = OTLPLogExporter(endpoint=logging_config.otel_endpoint, insecure=True)
 logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
 otel_handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
