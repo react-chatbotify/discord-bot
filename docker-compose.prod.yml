@@ -17,7 +17,5 @@ services:
     volumes:
       - ./otel-config.yaml:/etc/otel/config.yaml:ro
     command: ["--config", "/etc/otel/config.yaml"]
-    ports:
-      - "4317:4317"
     networks:
       - app-network
