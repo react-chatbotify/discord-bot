@@ -12,6 +12,7 @@ Features:
 - Logs bot readiness to the console
 """
 
+import asyncio
 import os
 
 import discord
@@ -23,6 +24,7 @@ from bot.database.mysql.init_db import init_db
 from bot.database.mysql.ticket_counter import initialize_ticket_counter_table
 from bot.ui.buttons.buttons_manager import ButtonsManager
 from bot.utils.console_logger import console_logger
+from bot.web_server import WebServer
 
 # Load environment variables from .env
 load_dotenv()
@@ -39,6 +41,9 @@ cogs_manager = CogsManager(bot)
 
 # Flag if bot startup is complete
 bot_startup_complete = False
+
+# Web server instance
+web_server = WebServer(bot)
 
 
 @bot.event
@@ -68,5 +73,17 @@ async def on_ready():
         console_logger.info("Reconnected to Discord.")
 
 
-# Run the bot using the token from .env
-bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+async def main():
+    """
+    Handle initialization of the bot and web server.
+    """
+    async with bot:
+        await web_server.start()
+        await bot.start(os.getenv("DISCORD_BOT_TOKEN"))
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        console_logger.info("Bot is shutting down.")

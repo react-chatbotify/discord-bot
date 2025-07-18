@@ -4,6 +4,8 @@ services:
   discord-bot:
     container_name: rcb-discord-bot
     restart: always
+    ports:
+      - "8180:8180"
     depends_on:
       mysql:
         condition: service_healthy
