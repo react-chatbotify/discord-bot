@@ -1,32 +1,22 @@
 """
-CommandCenterCog module for handling critical events (such as service issues).
+CommandCenterCog module for handling critical events and interacting with the MCP server.
 
-This module defines a Discord bot cog that listens for external webhook
-events dispatched internally within the bot (e.g., from a local or remote
-web server). When a webhook event is received, the cog forwards the message
-to a configured channel for alerting and further handling.
-
-The configuration for the destination channel is loaded from the centralized
-command center config module.
+This module defines a Discord bot cog that provides administrators with an interface
+to communicate with Google Gemini, which in turn has access to a remote MCP
+(Model Context Protocol) server.
 """
 
 from discord.ext import commands
 
 from bot.config.command_center import command_center_config
+from bot.core.command_center import configure_genai, get_ai_response
+from bot.services.role_checker_svc import has_admin_role
 
 
 class CommandCenter(commands.Cog):
     """
-    A Discord bot cog for processing and routing command center events.
-
-    This cog listens for internally dispatched command center events (e.g.,
-    `bot.dispatch("service_issue_event", data)`) and forwards the relevant
-    information to a preconfigured channel defined in the command center config.
-
-    Listeners:
-        on_service_issue_event:
-            - Triggered when an external webhook event is received by the bot.
-              Forwards the message to the configured channel.
+    A Discord bot cog for processing and routing command center events
+    and interacting with the MCP server.
     """
 
     def __init__(self, bot: commands.Bot):
@@ -35,23 +25,41 @@ class CommandCenter(commands.Cog):
 
         Args:
             bot (commands.Bot): The Discord bot instance.
-
         """
         self.bot = bot
+        configure_genai()
+
+    @commands.command(name="mcp")
+    @has_admin_role()
+    async def mcp(self, ctx: commands.Context, *, user_request: str):
+        """
+        Allow administrators to talk to Google Gemini with access to an MCP server.
+
+        Args:
+            ctx (commands.Context): The context in which the command is invoked.
+            user_request (str): The user's request to be processed by Gemini.
+        """
+        if ctx.channel.id != int(command_center_config.command_center_channel_id):
+            await ctx.send(
+                "This command can only be used in the command center channel."
+            )
+            return
+
+        response, tool_calls = await get_ai_response(user_request)
+
+        if tool_calls:
+            for tool_call in tool_calls:
+                await ctx.send(tool_call, ephemeral=True)
+
+        await ctx.send(response)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):
         """
-        Handle an external webhook event dispatched by the bot to indicate service issue.
-
-        This event listener is triggered when the bot receives a webhook
-        event through an internal dispatch (e.g., from an aiohttp server).
-        If a channel is configured via `command_center_config`, the event message
-        is sent there.
+        Handle an external webhook event dispatched by the bot to indicate a service issue.
 
         Args:
             data (dict): The event payload containing at least a 'message' field.
-
         """
         channel_id = command_center_config.command_center_channel_id
         if channel_id:
@@ -67,6 +75,5 @@ async def setup(bot: commands.Bot):
 
     Args:
         bot (commands.Bot): The bot instance to which the cog is added.
-
     """
     await bot.add_cog(CommandCenter(bot))

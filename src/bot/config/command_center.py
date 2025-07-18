@@ -19,12 +19,21 @@ class CommandCenterConfig(BaseSettings):
 
     Attributes:
         command_center_channel_id (int): The Discord channel ID for the command center.
-
+        gemini_api_key (str): The API key for the Google Gemini service.
+        mcp_server_url (str, optional): The URL for the MCP server.
     """
 
     command_center_channel_id: int = Field(
         default=0,
         description="The Discord channel ID where the command center is created.",
+    )
+    gemini_api_key: str = Field(
+        default="",
+        description="The API key for the Google Gemini service.",
+    )
+    mcp_server_url: str = Field(
+        default="",
+        description="The URL for the MCP server.",
     )
 
 
