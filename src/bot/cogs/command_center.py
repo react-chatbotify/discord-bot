@@ -8,8 +8,9 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 
 from discord.ext import commands
 
+from bot.agents.command_center_agent import CommandCenterAgent
 from bot.config.command_center import command_center_config
-from bot.core.command_center import configure_genai, get_ai_response
+from bot.core.command_center import configure_genai
 from bot.services.role_checker_svc import has_admin_role
 
 
@@ -25,8 +26,10 @@ class CommandCenter(commands.Cog):
 
         Args:
             bot (commands.Bot): The Discord bot instance.
+
         """
         self.bot = bot
+        self.agent = CommandCenterAgent()
         configure_genai()
 
     @commands.command(name="mcp")
@@ -38,20 +41,20 @@ class CommandCenter(commands.Cog):
         Args:
             ctx (commands.Context): The context in which the command is invoked.
             user_request (str): The user's request to be processed by Gemini.
+
         """
         if ctx.channel.id != int(command_center_config.command_center_channel_id):
-            await ctx.send(
-                "This command can only be used in the command center channel."
-            )
+            await ctx.send("This command can only be used in the command center channel.")
             return
 
-        response, tool_calls = await get_ai_response(user_request)
+        async with self.agent as agent:
+            response, tool_calls = await agent.get_ai_response(user_request)
 
-        if tool_calls:
-            for tool_call in tool_calls:
-                await ctx.send(tool_call, ephemeral=True)
+            if tool_calls:
+                for tool_call in tool_calls:
+                    await ctx.send(tool_call, ephemeral=True)
 
-        await ctx.send(response)
+            await ctx.send(response)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):
@@ -60,6 +63,7 @@ class CommandCenter(commands.Cog):
 
         Args:
             data (dict): The event payload containing at least a 'message' field.
+
         """
         channel_id = command_center_config.command_center_channel_id
         if channel_id:
@@ -75,5 +79,6 @@ async def setup(bot: commands.Bot):
 
     Args:
         bot (commands.Bot): The bot instance to which the cog is added.
+
     """
     await bot.add_cog(CommandCenter(bot))
