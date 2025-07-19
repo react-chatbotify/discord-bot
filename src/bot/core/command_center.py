@@ -52,14 +52,20 @@ async def get_ai_response(user_request: str):
         async with ClientSession(read, write) as session:
             await session.initialize()
 
-            response = await genai.GenerativeModel('gemini-1.5-flash').generate_content_async(
-                user_request,
-                tools=[session],
-            )
+            model = genai.GenerativeModel('gemini-1.5-flash', tools=[session])
+            chat = model.start_chat()
+            response = await chat.send_message_async(user_request)
 
             tool_calls = []
-            if response.tool_calls:
+            tool_call_count = 0
+            while response.tool_calls and tool_call_count < command_center_config.max_tool_calls:
                 for tool_call in response.tool_calls:
                     tool_calls.append(f"Tool call: {tool_call.function_call.name} with args {tool_call.function_call.args}")
+
+                response = await chat.send_message_async(response.tool_calls)
+                tool_call_count += 1
+
+            if tool_call_count >= command_center_config.max_tool_calls:
+                return "Maximum tool calls reached. Could not complete the action.", tool_calls
 
             return response.text, tool_calls

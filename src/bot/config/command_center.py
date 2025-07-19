@@ -35,6 +35,10 @@ class CommandCenterConfig(BaseSettings):
         default="",
         description="The URL for the MCP server.",
     )
+    max_tool_calls: int = Field(
+        default=10,
+        description="The maximum number of tool calls that can be made in a single request.",
+    )
 
 
 command_center_config = CommandCenterConfig()
