@@ -6,12 +6,13 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 (Model Context Protocol) server.
 """
 
+import discord
 from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.config.command_center import command_center_config
 from bot.core.command_center import configure_genai
-from bot.services.role_checker_svc import has_admin_role
+from bot.utils.decorators import admin_only
 
 
 class CommandCenter(commands.Cog):
@@ -32,19 +33,27 @@ class CommandCenter(commands.Cog):
         self.agent = CommandCenterAgent()
         configure_genai()
 
-    @commands.command(name="mcp")
-    @has_admin_role()
-    async def mcp(self, ctx: commands.Context, *, user_request: str):
+    # todo: need to restrict to admin role?
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
         """
-        Allow administrators to talk to Google Gemini with access to an MCP server.
-
-        Args:
-            ctx (commands.Context): The context in which the command is invoked.
-            user_request (str): The user's request to be processed by Gemini.
-
+        Trigger MCP logic when a message is sent in the command center channel and the bot is mentioned.
         """
-        if ctx.channel.id != int(command_center_config.command_center_channel_id):
-            await ctx.send("This command can only be used in the command center channel.")
+        # Ignore bot's own messages
+        if message.author.bot:
+            return
+
+        # Only act in the command center channel
+        if message.channel.id != int(command_center_config.command_center_channel_id):
+            return
+
+        # Only proceed if the bot is mentioned
+        if self.bot.user not in message.mentions:
+            return
+
+        user_request = message.content.replace(f"<@{self.bot.user.id}>", "").strip()
+        if not user_request:
+            await message.channel.send("Please include a request after mentioning the bot.")
             return
 
         async with self.agent as agent:
@@ -52,9 +61,9 @@ class CommandCenter(commands.Cog):
 
             if tool_calls:
                 for tool_call in tool_calls:
-                    await ctx.send(tool_call, ephemeral=True)
+                    await message.channel.send(tool_call)
 
-            await ctx.send(response)
+            await message.channel.send(response)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):

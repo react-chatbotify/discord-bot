@@ -15,14 +15,19 @@ from bot.utils.otel_handler import otel_handler
 console_logger = logging.getLogger(logging_config.logger_prefix)
 
 # sets log level to info
-log_level_num = getattr(logging, logging_config.logger_level, logging.INFO)
+log_level_num = getattr(logging, logging_config.logger_level.upper(), logging.INFO)
 console_logger.setLevel(log_level_num)
 
 # formats logger output
 formatter = logging.Formatter(logging_config.logger_format)
 
-# sets the formatter
+# sets the otel formatter and handler
 otel_handler.setFormatter(formatter)
 console_logger.addHandler(otel_handler)
+
+# sets the stream formatter and handler
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+console_logger.addHandler(stream_handler)
 
 console_logger.info("✅ Logger is successfully configured.")

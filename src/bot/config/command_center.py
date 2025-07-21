@@ -32,13 +32,13 @@ class CommandCenterConfig(BaseSettings):
         default="",
         description="The API key for the Google Gemini service.",
     )
+    gemini_model: str = Field(
+        default="gemini-2.5-flash-lite-preview-06-17",
+        description="The model name for the Google Gemini service.",
+    )
     mcp_server_url: str = Field(
         default="",
         description="The URL for the MCP server.",
-    )
-    max_tool_calls: int = Field(
-        default=10,
-        description="The maximum number of tool calls that can be made in a single request.",
     )
 
 
