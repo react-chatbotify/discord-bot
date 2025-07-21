@@ -48,6 +48,10 @@ class LoggingConfig(BaseSettings):
     logged_actions: Annotated[List[str], NoDecode] = Field(
         default_factory=list, description="The list of actions to be logged."
     )
+    otel_enabled: bool = Field(
+        default=False,
+        description="Whether OpenTelemetry logging is enabled.",
+    )
     otel_endpoint: str = Field(
         default="otel-collector:4317",
         description="The endpoint to send logs to the otel collector.",

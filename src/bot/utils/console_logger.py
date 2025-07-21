@@ -22,8 +22,9 @@ console_logger.setLevel(log_level_num)
 formatter = logging.Formatter(logging_config.logger_format)
 
 # sets the otel formatter and handler
-otel_handler.setFormatter(formatter)
-console_logger.addHandler(otel_handler)
+if logging_config.otel_enabled:
+    otel_handler.setFormatter(formatter)
+    console_logger.addHandler(otel_handler)
 
 # sets the stream formatter and handler
 stream_handler = logging.StreamHandler()

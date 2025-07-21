@@ -7,6 +7,7 @@ from mcp import ClientSession
 
 from bot.config.command_center import command_center_config
 from bot.core.command_center import get_mcp_client
+from bot.models.prompt import Prompt
 
 
 class CommandCenterAgent:
@@ -62,3 +63,17 @@ class CommandCenterAgent:
         response = await chat.send_message_async(user_request)
 
         return response.text, []
+
+    async def get_prompts(self) -> list[Prompt]:
+        """
+        Fetches prompts from the MCP server.
+
+        Returns:
+            list[Prompt]: A list of Prompt objects.
+        """
+        prompts_data = await self.session.get_prompts()
+        return [
+            Prompt(title=p["title"], content=p["content"])
+            for p in prompts_data
+            if p.get("role") == "user"
+        ]

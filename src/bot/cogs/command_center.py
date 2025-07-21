@@ -12,6 +12,7 @@ from discord.ext import commands
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.config.command_center import command_center_config
 from bot.core.command_center import configure_genai
+from bot.ui.views.prompt_suggestions import PromptSuggestionsView
 from bot.utils.decorators import admin_only
 
 
@@ -53,7 +54,15 @@ class CommandCenter(commands.Cog):
 
         user_request = message.content.replace(f"<@{self.bot.user.id}>", "").strip()
         if not user_request:
-            await message.channel.send("Please include a request after mentioning the bot.")
+            async with self.agent as agent:
+                prompts = await agent.get_prompts()
+                if prompts:
+                    view = PromptSuggestionsView(prompts)
+                    await message.channel.send("Please select a prompt:", view=view)
+                else:
+                    await message.channel.send(
+                        "No prompts available. Please include a request after mentioning the bot."
+                    )
             return
 
         async with self.agent as agent:
