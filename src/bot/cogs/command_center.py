@@ -6,14 +6,14 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 (Model Context Protocol) server.
 """
 
+import traceback
 import discord
 from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.config.command_center import command_center_config
-from bot.core.command_center import configure_genai
-from bot.ui.views.prompt_suggestions import PromptSuggestionsView
-from bot.utils.decorators import admin_only
+from bot.core.command_center import handle_message_input
+from bot.utils.console_logger import console_logger
 
 
 class CommandCenter(commands.Cog):
@@ -32,7 +32,14 @@ class CommandCenter(commands.Cog):
         """
         self.bot = bot
         self.agent = CommandCenterAgent()
-        configure_genai()
+        self._prompts_initialized = False
+
+    def cog_unload(self):
+        """
+        Unload the cog and release embedded resources.
+        """
+        self.agent = None
+        self._prompts_initialized = False
 
     # todo: need to restrict to admin role?
     @commands.Cog.listener()
@@ -52,27 +59,9 @@ class CommandCenter(commands.Cog):
         if self.bot.user not in message.mentions:
             return
 
-        user_request = message.content.replace(f"<@{self.bot.user.id}>", "").strip()
-        if not user_request:
-            async with self.agent as agent:
-                prompts = await agent.get_prompts()
-                if prompts:
-                    view = PromptSuggestionsView(prompts)
-                    await message.channel.send("Please select a prompt:", view=view)
-                else:
-                    await message.channel.send(
-                        "No prompts available. Please include a request after mentioning the bot."
-                    )
-            return
+        response = await handle_message_input(self.bot, self.agent, message)
 
-        async with self.agent as agent:
-            response, tool_calls = await agent.get_ai_response(user_request)
-
-            if tool_calls:
-                for tool_call in tool_calls:
-                    await message.channel.send(tool_call)
-
-            await message.channel.send(response)
+        await message.channel.send(response)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):
@@ -99,4 +88,14 @@ async def setup(bot: commands.Bot):
         bot (commands.Bot): The bot instance to which the cog is added.
 
     """
-    await bot.add_cog(CommandCenter(bot))
+    cog = CommandCenter(bot)
+    await bot.add_cog(cog)  # Add cog first, so it's fully registered
+
+    # Now manually trigger initialization
+    try:
+        await cog.agent.initialize_prompts()
+        cog._prompts_initialized = True
+        console_logger.info("✅ Prompts successfully initialized in setup().")
+    except Exception:
+        console_logger.error(f"❌ Failed to initialize prompts:\n{traceback.format_exc()}")
+

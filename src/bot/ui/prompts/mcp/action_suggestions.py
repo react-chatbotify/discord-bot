@@ -16,7 +16,7 @@ class PromptSuggestionsView(discord.ui.View):
         super().__init__()
 
         options = [
-            discord.SelectOption(label=prompt.title, value=prompt.content) for prompt in prompts
+            discord.SelectOption(label=prompt.content, value=prompt.title) for prompt in prompts
         ]
         self.add_item(
             discord.ui.Select(

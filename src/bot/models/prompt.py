@@ -12,4 +12,5 @@ class Prompt:
     """
 
     title: str
+    description: str
     content: str

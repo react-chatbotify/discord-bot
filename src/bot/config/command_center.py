@@ -40,6 +40,9 @@ class CommandCenterConfig(BaseSettings):
         default="",
         description="The URL for the MCP server.",
     )
-
+    mcp_server_token: str = Field(
+        default="",
+        description="The token for the MCP server.",
+    )
 
 command_center_config = CommandCenterConfig()
