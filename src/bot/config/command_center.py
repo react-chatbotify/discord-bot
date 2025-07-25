@@ -45,4 +45,5 @@ class CommandCenterConfig(BaseSettings):
         description="The token for the MCP server.",
     )
 
+
 command_center_config = CommandCenterConfig()

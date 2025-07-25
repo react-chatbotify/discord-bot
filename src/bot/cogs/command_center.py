@@ -7,12 +7,14 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 """
 
 import traceback
+
 import discord
 from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.config.command_center import command_center_config
 from bot.core.command_center import handle_message_input
+from bot.prompt_loaders.mcp import McpPromptLoader
 from bot.utils.console_logger import console_logger
 
 
@@ -38,6 +40,7 @@ class CommandCenter(commands.Cog):
         """
         Unload the cog and release embedded resources.
         """
+        McpPromptLoader.unload_prompts(self.agent.user_prompts)
         self.agent = None
         self._prompts_initialized = False
 
@@ -59,9 +62,10 @@ class CommandCenter(commands.Cog):
         if self.bot.user not in message.mentions:
             return
 
-        response = await handle_message_input(self.bot, self.agent, message)
+        response = await handle_message_input(self.bot, message)
 
-        await message.channel.send(response)
+        if response:
+            await message.channel.send(response)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):
@@ -94,8 +98,8 @@ async def setup(bot: commands.Bot):
     # Now manually trigger initialization
     try:
         await cog.agent.initialize_prompts()
+        McpPromptLoader.load_prompts(cog.agent.user_prompts)
         cog._prompts_initialized = True
         console_logger.info("✅ Prompts successfully initialized in setup().")
     except Exception:
         console_logger.error(f"❌ Failed to initialize prompts:\n{traceback.format_exc()}")
-

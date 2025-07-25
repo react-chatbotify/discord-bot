@@ -3,6 +3,7 @@ Defines the Agent class for interacting with the Google Gemini API and MCP serve
 """
 
 import json
+
 import google.generativeai as genai
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
@@ -18,17 +19,26 @@ class CommandCenterAgent:
     """
 
     def __init__(self):
+        """
+        Initialize the CommandCenterAgent.
+
+        Sets up authentication headers and internal data structures used to manage
+        prompt templates retrieved from the MCP server. These include:
+
+        Args:
+            system_prompt: A list of system-level prompts used to configure the AI's behavior.
+            user_prompts: A list of user-facing prompts that can be selected or presented in the UI.
+
+        """
         # Holds the single system‐role prompt text
         self.system_prompt: list[Prompt] = []
         # Holds all user‐role prompt templates for client‐side selection
         self.user_prompts: list[Prompt] = []
-        self.headers = {
-            "Authorization": f"Bearer {command_center_config.mcp_server_token}"
-        }
+        self.headers = {"Authorization": f"Bearer {command_center_config.mcp_server_token}"}
 
-    async def initialize_prompts(self) -> list[Prompt]:
+    async def initialize_prompts(self):
         """
-        Fetches prompts from the MCP server.
+        Fetch prompts from the MCP server.
 
         System‐role prompts (no required args) populate self.system_prompt.
         User‐role prompts (have required args) populate self.user_prompts and are returned.
@@ -61,14 +71,11 @@ class CommandCenterAgent:
                     result = await session.get_prompt(prompt_def.name)
                     # look for the first "system" message
                     for msg in result.messages:
-                        txt = (
-                            msg.content.text
-                            if isinstance(msg.content, types.TextContent)
-                            else str(msg.content)
-                        )
+                        txt = msg.content.text if isinstance(msg.content, types.TextContent) else str(msg.content)
                         if prompt_def.name.startswith("system://"):
                             self.system_prompt.append(
                                 Prompt(
+                                    custom_id=prompt_def.name,
                                     title=prompt_def.name,
                                     description=prompt_def.description,
                                     content=txt or "",
@@ -78,6 +85,7 @@ class CommandCenterAgent:
                         else:
                             self.user_prompts.append(
                                 Prompt(
+                                    custom_id=prompt_def.name,
                                     title=prompt_def.name,
                                     description=prompt_def.description[:100],
                                     content=txt or "",
@@ -86,7 +94,7 @@ class CommandCenterAgent:
 
     async def get_action_history(self, chat) -> list[dict]:
         """
-        Returns the action history of the agent, which includes all actions taken
+        Return the action history of the agent, which includes all actions taken
         during the last interaction with the Gemini API.
         """
         actions: list[dict] = []
@@ -94,26 +102,19 @@ class CommandCenterAgent:
             # todo: fix the logic here
             fn = getattr(msg, "function_call", None)
             if fn:
-                actions.append({
-                    "name": fn.name,
-                    "args": json.loads(fn.arguments or "{}")
-                })
+                actions.append({"name": fn.name, "args": json.loads(fn.arguments or "{}")})
             if msg.role == "tool":
                 # msg.name is the tool URI/name, msg.content is the body
                 result_text = ""
                 if isinstance(msg.content, types.TextContent):
                     result_text = msg.content.text
-                actions.append({
-                    "tool": msg.name,
-                    "result": result_text
-                })
+                actions.append({"tool": msg.name, "result": result_text})
         return actions
 
-    async def get_agent_response(
-        self, user_request: str
-    ) -> tuple[str, list[dict]]:
+    async def get_agent_response(self, user_request: str) -> tuple[str, list[dict]]:
         """
-        Sends the user's request to Gemini with automatic function‐calling,
+        Send the user's request to Gemini with automatic function‐calling.
+
         then returns a tuple of:
           1) the assistant's final text
           2) a list of all actions taken, e.g. [{"name": ..., "args": ...}, {"tool": ..., "result": ...}, ...]
@@ -135,9 +136,7 @@ class CommandCenterAgent:
 
                 # seed the system prompt if you have one
                 if self.system_prompt:
-                    await chat.send_message(
-                        self.system_prompt, message_role="system"
-                    )
+                    await chat.send_message(self.system_prompt, message_role="system")
 
                 # send the user message and await the final assistant reply
                 response = await chat.send_message_async(user_request)
