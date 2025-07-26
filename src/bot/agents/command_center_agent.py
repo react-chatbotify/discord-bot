@@ -5,6 +5,7 @@ Defines the Agent class for interacting with the Google Gemini API and MCP serve
 import json
 
 from google import genai
+from google.genai.types import GenerateContentConfig
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -62,10 +63,9 @@ class CommandCenterAgent:
                 # reset any existing prompts
                 self.user_prompts = []
 
-                # classify each prompt template
+                # populate user prompts
                 for prompt_def in prompts_response.prompts:
                     result = await session.get_prompt(prompt_def.name)
-                    # look for the first "system" message
                     for msg in result.messages:
                         txt = msg.content.text if isinstance(msg.content, types.TextContent) else str(msg.content)
                         self.user_prompts.append(
@@ -94,7 +94,7 @@ class CommandCenterAgent:
 
                 # Extract and parse the JSON text
                 services_json = json.loads(result.contents[0].text)
-                services_list = services_json["data"]["services"]
+                services_list = services_json["services"]
 
                 # Join services into a comma-separated string
                 services_string = ", ".join(services_list)
@@ -124,7 +124,7 @@ class CommandCenterAgent:
                 # set up Gemini with auto function‐calling
                 chat = self.client.aio.chats.create(
                     model=command_center_config.gemini_model,
-                    config=genai.types.GenerateContentConfig(
+                    config=GenerateContentConfig(
                         temperature=0,
                         tools=[session],
                     ),
