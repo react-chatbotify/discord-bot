@@ -95,11 +95,15 @@ async def setup(bot: commands.Bot):
     cog = CommandCenter(bot)
     await bot.add_cog(cog)  # Add cog first, so it's fully registered
 
-    # Now manually trigger initialization
+    # Now manually trigger loading of prompts and setting system context
     try:
-        await cog.agent.initialize_prompts()
+        await cog.agent.load_all_prompts()
         McpPromptLoader.load_prompts(cog.agent.user_prompts)
         cog._prompts_initialized = True
-        console_logger.info("✅ Prompts successfully initialized in setup().")
     except Exception:
-        console_logger.error(f"❌ Failed to initialize prompts:\n{traceback.format_exc()}")
+        console_logger.error(f"❌ Failed to load prompts:\n{traceback.format_exc()}")
+
+    try:
+        await cog.agent.set_system_context()
+    except Exception:
+        console_logger.error(f"❌ Failed to set system context:\n{traceback.format_exc()}")
