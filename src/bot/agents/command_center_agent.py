@@ -2,9 +2,7 @@
 Defines the Agent class for interacting with the Google Gemini API and MCP server.
 """
 
-import json
-
-import google.generativeai as genai
+from google import genai
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -35,6 +33,7 @@ class CommandCenterAgent:
         # Holds all user‐role prompt templates for client‐side selection
         self.user_prompts: list[Prompt] = []
         self.headers = {"Authorization": f"Bearer {command_center_config.mcp_server_token}"}
+        self.client = genai.Client()
 
     async def initialize_prompts(self):
         """
@@ -92,25 +91,6 @@ class CommandCenterAgent:
                                 )
                             )
 
-    async def get_action_history(self, chat) -> list[dict]:
-        """
-        Return the action history of the agent, which includes all actions taken
-        during the last interaction with the Gemini API.
-        """
-        actions: list[dict] = []
-        for msg in chat.history:
-            # todo: fix the logic here
-            fn = getattr(msg, "function_call", None)
-            if fn:
-                actions.append({"name": fn.name, "args": json.loads(fn.arguments or "{}")})
-            if msg.role == "tool":
-                # msg.name is the tool URI/name, msg.content is the body
-                result_text = ""
-                if isinstance(msg.content, types.TextContent):
-                    result_text = msg.content.text
-                actions.append({"tool": msg.name, "result": result_text})
-        return actions
-
     async def get_agent_response(self, user_request: str) -> tuple[str, list[dict]]:
         """
         Send the user's request to Gemini with automatic function‐calling.
@@ -128,21 +108,33 @@ class CommandCenterAgent:
                 await session.initialize()
 
                 # set up Gemini with auto function‐calling
-                model = genai.GenerativeModel(
-                    command_center_config.gemini_model,
-                    tools=[session],
+                chat = self.client.aio.chats.create(
+                    model=command_center_config.gemini_model,
+                    config=genai.types.GenerateContentConfig(
+                        temperature=0,
+                        tools=[session],
+                    ),
                 )
-                chat = model.start_chat(enable_automatic_function_calling=True)
 
                 # seed the system prompt if you have one
                 if self.system_prompt:
-                    await chat.send_message(self.system_prompt, message_role="system")
+                    await chat.send_message(self.system_prompt[0].content)
 
                 # send the user message and await the final assistant reply
-                response = await chat.send_message_async(user_request)
+                response = await chat.send_message(user_request)
 
                 # now collect every function_call + tool response from the history
-                actions: list[dict] = await self.get_action_history(chat)
+                actions: list[dict] = []
+                for msg in chat.history:
+                    if msg.role == "model" and msg.parts[0].function_call:
+                        function_call = msg.parts[0].function_call
+                        actions.append({"name": function_call.name, "args": dict(function_call.args)})
+                    if msg.role == "tool":
+                        # msg.name is the tool URI/name, msg.content is the body
+                        result_text = ""
+                        if isinstance(msg.content, types.TextContent):
+                            result_text = msg.content.text
+                        actions.append({"tool": msg.name, "result": result_text})
 
                 # finally return (assistant_text, actions_list)
                 return response.text, actions

@@ -10,7 +10,6 @@ from typing import List
 from bot.core.command_center import handle_prompt_input
 from bot.models.prompt import Prompt
 from bot.ui.buttons.buttons_manager import ButtonsManager
-from bot.utils.console_logger import console_logger
 
 
 class McpPromptLoader:

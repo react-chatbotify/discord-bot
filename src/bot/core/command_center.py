@@ -14,7 +14,6 @@ from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.ui.prompts.prompts_manager import PromptsManager
-from bot.utils.console_logger import console_logger
 
 
 async def handle_prompt_input(interaction: discord.Interaction) -> Optional[str]:
