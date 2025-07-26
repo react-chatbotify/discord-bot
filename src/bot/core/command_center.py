@@ -28,7 +28,7 @@ async def handle_prompt_input(interaction: discord.Interaction) -> Optional[str]
         interaction (discord.Interaction): The interaction that triggered the prompt.
 
     """
-    handle_message_input(interaction.client, interaction.message)
+    await handle_message_input(interaction.client, interaction.message)
 
 
 async def handle_message_input(bot: commands.Bot, message: discord.Message) -> Optional[str]:
@@ -54,8 +54,6 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message) -> O
     # handles the case where the user just mentions the bot without any additional text
     if not user_request:
         prompts = agent.user_prompts
-        console_logger.info("Checkpoint AAA")
-        console_logger.info(f"Available prompts: {prompts}")
         if prompts:
             await PromptsManager.send_prompt(
                 channel=message.channel,
@@ -63,7 +61,6 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message) -> O
                 prompts=prompts,
             )
         else:
-            console_logger.info("Checkpoint 3")
             await message.channel.send("What would you like me to help you with today?")
         return
 

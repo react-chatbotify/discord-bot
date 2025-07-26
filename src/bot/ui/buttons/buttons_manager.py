@@ -93,10 +93,17 @@ class ButtonsManager:
                 interaction (discord.Interaction): The interaction from Discord.
 
             """
-            if not interaction.data or not interaction.data.get("custom_id"):
+            if not interaction.data:
                 return
 
-            custom_id = interaction.data["custom_id"]
+            component_type = interaction.data.get("component_type")
+
+            # handles button & select menu differently
+            if component_type == discord.ComponentType.button.value:
+                custom_id = interaction.data["custom_id"]
+            elif component_type == discord.ComponentType.select.value:
+                custom_id = interaction.data["values"][0]
+
             if custom_id in cls._button_callbacks:
                 await cls._button_callbacks[custom_id](interaction)
             else:

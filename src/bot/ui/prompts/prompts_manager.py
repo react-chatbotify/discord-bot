@@ -29,7 +29,7 @@ class PromptView(discord.ui.View):
         """
         super().__init__()
 
-        options = [discord.SelectOption(label=prompt.content, value=prompt.title) for prompt in prompts]
+        options = [discord.SelectOption(label=prompt.content, value=prompt.custom_id) for prompt in prompts]
         self.add_item(
             discord.ui.Select(
                 placeholder="Click Me!",

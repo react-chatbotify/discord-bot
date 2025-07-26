@@ -10,6 +10,7 @@ from typing import List
 from bot.core.command_center import handle_prompt_input
 from bot.models.prompt import Prompt
 from bot.ui.buttons.buttons_manager import ButtonsManager
+from bot.utils.console_logger import console_logger
 
 
 class McpPromptLoader:
@@ -20,6 +21,7 @@ class McpPromptLoader:
     interaction handlers for report-related actions.
     """
 
+    @staticmethod
     def load_prompts(prompts: List[Prompt]):
         """
         Register all prompt callbacks/views.
@@ -28,6 +30,7 @@ class McpPromptLoader:
         for prompt in prompts:
             ButtonsManager.register_callback(prompt.custom_id, handle_prompt_input)
 
+    @staticmethod
     def unload_prompts(prompts: List[Prompt]):
         """
         Unregister all button callbacks/views.
