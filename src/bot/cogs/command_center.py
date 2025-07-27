@@ -7,7 +7,6 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 """
 
 import traceback
-from datetime import datetime, timezone
 
 import discord
 from discord.ext import commands
@@ -69,18 +68,7 @@ class CommandCenter(commands.Cog):
         if self.bot.user not in message.mentions and not isinstance(message.channel, discord.Thread):
             return
 
-        # If the message is not in a thread, create a new thread
-        if not isinstance(message.channel, discord.Thread):
-            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
-            thread_name = f"🤖-{timestamp}"
-            thread = await message.create_thread(name=thread_name)
-        else:
-            thread = message.channel
-
-        response = await handle_message_input(self.bot, message, thread)
-
-        if response:
-            await thread.send(response)
+        await handle_message_input(self.bot, message)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):

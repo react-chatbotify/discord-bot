@@ -7,6 +7,7 @@ functions to start and close sessions and retrieve AI-generated
 responses based on user input.
 """
 
+from datetime import datetime, timezone
 from typing import Optional
 
 import discord
@@ -28,11 +29,10 @@ async def handle_prompt_input(interaction: discord.Interaction) -> Optional[str]
         interaction (discord.Interaction): The interaction that triggered the prompt.
 
     """
-    message = interaction.message
-    await handle_message_input(interaction.client, message, message.thread)
+    await handle_message_input(interaction.client, interaction.message)
 
 
-async def handle_message_input(bot: commands.Bot, message: discord.Message, thread: discord.Thread) -> Optional[str]:
+async def handle_message_input(bot: commands.Bot, message: discord.Message):
     """
     Get an AI-generated response for the given message content.
 
@@ -42,7 +42,6 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message, thre
     Args:
         bot: The Discord bot instance.
         message (discord.Message): The message input provided.
-        thread: The thread to handle message input in
 
     Returns:
         Optional[str]: The AI-generated response, or None if no response should be sent.
@@ -54,7 +53,8 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message, thre
     user_request = message.content.replace(f"<@{bot.user.id}>", "").strip()
 
     # handles the case where the user just mentions the bot without any additional text
-    if not user_request:
+    # we'll also only prompt if this is happening inside the main command center channel
+    if not user_request and not isinstance(message.channel, discord.Thread):
         prompts = agent.user_prompts
         if prompts:
             await PromptsManager.send_prompt(
@@ -65,6 +65,12 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message, thre
         else:
             await message.channel.send("What would you like me to help you with today?")
         return
+
+    thread = message.channel if isinstance(message.channel, discord.Thread) else None
+    if not thread:
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
+        thread_name = f"🤖-{timestamp}"
+        thread = await message.create_thread(name=thread_name)
 
     # lets agent handle the request and return a response text along with actions taken
     response_text, actions = await agent.get_agent_response(message, thread)
@@ -100,4 +106,5 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message, thre
             persistent=False,
         )
 
-    return response_text
+    if response_text:
+        await thread.send(response_text)
