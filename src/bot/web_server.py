@@ -45,7 +45,14 @@ class WebServer:
 
         """
         auth_header = request.headers.get("Authorization")
-        if not auth_header or auth_header != os.getenv("HEALTHCHECKS_WEBHOOK_TOKEN"):
+
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return web.Response(text="Unauthorized", status=401)
+
+        token = auth_header.split("Bearer ")[1].strip()
+        expected_token = os.getenv("HEALTHCHECKS_WEBHOOK_TOKEN")
+
+        if token != expected_token:
             return web.Response(text="Unauthorized", status=401)
 
         data = await request.json()
