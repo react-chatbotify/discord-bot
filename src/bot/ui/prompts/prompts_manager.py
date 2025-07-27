@@ -81,7 +81,8 @@ class PromptsManager:
                 return
 
             custom_id = interaction.data["values"][0]
-            if custom_id in cls._prompt_callbacks:
+            if custom_id in cls._prompt_callbacks and not interaction.response.is_done():
+                await interaction.response.defer()
                 await cls._prompt_callbacks[custom_id](interaction, custom_id)
             else:
                 await interaction.response.send_message(
