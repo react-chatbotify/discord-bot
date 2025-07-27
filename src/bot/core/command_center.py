@@ -18,6 +18,23 @@ from bot.ui.embeds.embeds_manager import EmbedsManager
 from bot.ui.prompts.prompts_manager import PROMPT_ID_TO_TEXT_MAPPING, PromptsManager
 
 
+async def handle_webhook_input(bot: commands.Bot, channel: discord.TextChannel, data: dict):
+    """
+    Entry point for webhook sent to the command center.
+    """
+    if data.get("type", "").lower() == "service_down":
+        msg = await channel.send(
+            f"<@{bot.user.id}> A service appears to have gone down. You must first check the service "
+            f"to verify if it is indeed down. If so, you should attempt to troubleshoot and bring the "
+            f"service back up. If unsuccessful, you should alert the user. Here are the details:\n"
+            f"{data.get('message', 'Service down detected.')}"
+        )
+        await handle_message_input(bot, msg)
+    else:
+        message = data.get("message", "No message provided.")
+        await channel.send(f"Webhook event received: {message}")
+
+
 async def handle_prompt_input(interaction: discord.Interaction, custom_id: str) -> Optional[str]:
     """
     Entry point for handling prompt-based interactions via Discord UI components.

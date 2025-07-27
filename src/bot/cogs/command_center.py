@@ -13,7 +13,7 @@ from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.config.command_center import command_center_config
-from bot.core.command_center import handle_message_input
+from bot.core.command_center import handle_message_input, handle_webhook_input
 from bot.prompt_loaders.mcp import McpPromptLoader
 from bot.utils.console_logger import console_logger
 
@@ -79,12 +79,15 @@ class CommandCenter(commands.Cog):
             data (dict): The event payload containing at least a 'message' field.
 
         """
+        # if not able to even get channel, nothing to do
         channel_id = command_center_config.command_center_channel_id
         if channel_id:
             channel = self.bot.get_channel(int(channel_id))
-            if channel:
-                message = data.get("message", "No message provided.")
-                await channel.send(f"Webhook event received: {message}")
+        if not channel:
+            return
+
+        # handle service down event
+        await handle_webhook_input(self.bot, channel, data)
 
 
 async def setup(bot: commands.Bot):
