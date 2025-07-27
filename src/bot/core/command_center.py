@@ -15,10 +15,10 @@ from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
 from bot.ui.embeds.embeds_manager import EmbedsManager
-from bot.ui.prompts.prompts_manager import PromptsManager
+from bot.ui.prompts.prompts_manager import PROMPT_ID_TO_TEXT_MAPPING, PromptsManager
 
 
-async def handle_prompt_input(interaction: discord.Interaction) -> Optional[str]:
+async def handle_prompt_input(interaction: discord.Interaction, custom_id: str) -> Optional[str]:
     """
     Entry point for handling prompt-based interactions via Discord UI components.
 
@@ -27,8 +27,11 @@ async def handle_prompt_input(interaction: discord.Interaction) -> Optional[str]
 
     Args:
         interaction (discord.Interaction): The interaction that triggered the prompt.
+        custom_id: id of the prompt for mapping to text
 
     """
+    # overwrite the message content with the mapping (default content is just the prompt question)
+    interaction.message.content = PROMPT_ID_TO_TEXT_MAPPING[custom_id]
     await handle_message_input(interaction.client, interaction.message)
 
 

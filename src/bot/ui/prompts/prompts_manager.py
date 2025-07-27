@@ -6,12 +6,16 @@ It includes a view for displaying prompts in a dropdown menu and methods to send
 to channels or interactions.
 """
 
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional
 
 import discord
+from discord.ext import commands
 
 from bot.models.prompt import Prompt
 from bot.utils.console_logger import console_logger
+
+# maps the id of a prompt to the text content it shows
+PROMPT_ID_TO_TEXT_MAPPING = {}
 
 
 class PromptView(discord.ui.View):
@@ -43,6 +47,72 @@ class PromptsManager:
     """
     Manages sending prompts and handling interactions.
     """
+
+    _prompt_callbacks: Dict[str, Callable] = {}
+    _bot: Optional[commands.Bot] = None
+
+    @classmethod
+    def setup(cls, bot: commands.Bot):
+        """
+        Initialize the manager with the bot instance.
+
+        Args:
+            bot (commands.Bot): The bot to register listeners on.
+
+        """
+        cls._bot = bot
+
+        @bot.listen("on_interaction")
+        async def on_prompt_interaction(interaction: discord.Interaction):
+            """
+            Route a prompt interaction to its callback.
+
+            Args:
+                interaction (discord.Interaction): The interaction from Discord.
+
+            """
+            if not interaction.data:
+                return
+
+            component_type = interaction.data.get("component_type")
+
+            # handle prompts only
+            if component_type != discord.ComponentType.select.value:
+                return
+
+            custom_id = interaction.data["values"][0]
+            if custom_id in cls._prompt_callbacks:
+                await cls._prompt_callbacks[custom_id](interaction, custom_id)
+            else:
+                await interaction.response.send_message(
+                    "⚠️ This feature is disabled or unavailable.",
+                    ephemeral=True,
+                )
+
+    @classmethod
+    def register_callback(cls, custom_id: str, text: str, callback: Callable):
+        """
+        Register a prompt callback.
+
+        Args:
+            custom_id (str): The prompt's custom ID.
+            text (str): The text shown for the prompt.
+            callback (Callable): The function to invoke.
+
+        """
+        PROMPT_ID_TO_TEXT_MAPPING[custom_id] = text
+        cls._prompt_callbacks[custom_id] = callback
+
+    @classmethod
+    def unregister_callback(cls, custom_id: str):
+        """
+        Unregister a prompt callback.
+
+        Args:
+            custom_id (str): The ID to remove.
+
+        """
+        cls._prompt_callbacks.pop(custom_id, None)
 
     @classmethod
     async def send_prompt(

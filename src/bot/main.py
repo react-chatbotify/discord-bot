@@ -23,6 +23,7 @@ from bot.cogs.cogs_manager import CogsManager
 from bot.database.mysql.init_db import init_db
 from bot.database.mysql.ticket_counter import initialize_ticket_counter_table
 from bot.ui.buttons.buttons_manager import ButtonsManager
+from bot.ui.prompts.prompts_manager import PromptsManager
 from bot.utils.console_logger import console_logger
 from bot.web_server import WebServer
 
@@ -35,6 +36,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Set up all buttons (register callbacks)
 ButtonsManager.setup(bot)
+
+# Set up all prompts (register callbacks)
+PromptsManager.setup(bot)
 
 # Initialize cog manager
 cogs_manager = CogsManager(bot)

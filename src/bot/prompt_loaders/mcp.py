@@ -1,23 +1,22 @@
 """
-Button loader module for report ticket UI components.
+Prompt loader module for mcp components.
 
-This module defines a loader class responsible for registering and
-unregistering interactive button components related to report tickets.
+This module defines a loader class responsible for mcp prompts.
 """
 
 from typing import List
 
 from bot.core.command_center import handle_prompt_input
 from bot.models.prompt import Prompt
-from bot.ui.buttons.buttons_manager import ButtonsManager
+from bot.ui.prompts.prompts_manager import PromptsManager
 
 
 class McpPromptLoader:
     """
-    Loader for report ticket-related button components.
+    Loader for mcp-related prompt components.
 
-    Registers and unregisters all button views and their associated
-    interaction handlers for report-related actions.
+    Registers and unregisters all prompt views and their associated
+    interaction handlers for mcp-related actions.
     """
 
     @staticmethod
@@ -27,13 +26,13 @@ class McpPromptLoader:
         """
         # register callbacks
         for prompt in prompts:
-            ButtonsManager.register_callback(prompt.custom_id, handle_prompt_input)
+            PromptsManager.register_callback(prompt.custom_id, prompt.content, handle_prompt_input)
 
     @staticmethod
     def unload_prompts(prompts: List[Prompt]):
         """
-        Unregister all button callbacks/views.
+        Unregister all prompt callbacks/views.
         """
         # unregister callbacks
         for prompt in prompts:
-            ButtonsManager.unregister_callback(prompt.custom_id)
+            PromptsManager.unregister_callback(prompt.custom_id)
