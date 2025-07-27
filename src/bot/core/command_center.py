@@ -13,6 +13,7 @@ import discord
 from discord.ext import commands
 
 from bot.agents.command_center_agent import CommandCenterAgent
+from bot.ui.embeds.embeds_manager import EmbedsManager
 from bot.ui.prompts.prompts_manager import PromptsManager
 
 
@@ -67,12 +68,33 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message) -> O
     response_text, actions = await agent.get_agent_response(user_request)
 
     # log the actions taken by the agent
-    for act in actions:
-        if act.get("name"):
-            # this was a function_call
-            await message.channel.send(f"🛠 Called `{act['name']}` with args {act['args']}")
-        elif act.get("tool"):
-            # this was the tool’s output
-            await message.channel.send(f"🔧 Tool `{act['tool']}` returned: {act['result']}")
+    if actions:
+        action_descriptions = []
+        for i, act in enumerate(actions):
+            # get the actual result from the action dictionary
+            result_text = act.get("result", "No result returned.")
+
+            # truncate the result if it's too long
+            if isinstance(result_text, (dict, list)):
+                result_text = str(result_text)
+            if len(result_text) > 200:
+                result_text = result_text[:200] + "..."
+
+            action_log = (
+                f"**{i+1}. Tool: `{act.get('name')}`**\n"
+                f"- **Args:** `{act.get('args')}`\n"
+                f"- **Result:** `{result_text}`\n"
+            )
+            action_descriptions.append(action_log)
+
+        # send agent actions as an embed for visual clarity
+        # todo: add toggle for verbosity?
+        await EmbedsManager.send_embed(
+            await bot.get_context(message),
+            title="⚙️ Agent Actions",
+            description="\n".join(action_descriptions),
+            color=discord.Color.blue().value,
+            persistent=False,
+        )
 
     return response_text

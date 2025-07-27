@@ -5,28 +5,36 @@ Defines the Agent class for interacting with the Google Gemini API and MCP serve
 import json
 
 from google import genai
-from google.genai.types import GenerateContentConfig
+from google.genai.types import Content, GenerateContentConfig
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
 
+from bot.agents.tools.get_service_health import get_service_health
+from bot.agents.tools.restart_service import restart_service
+from bot.agents.tools.trigger_user import trigger_user
 from bot.config.command_center import command_center_config
 from bot.models.prompt import Prompt
-from bot.primitives.tools.get_service_health import get_service_health
-from bot.primitives.tools.restart_service import restart_service
-from bot.primitives.tools.trigger_user import trigger_user
 from bot.utils.console_logger import console_logger
 
 SYSTEM_CONTEXT = (
-    "You are a helpful assistant that manages react-chatbotify services. "
+    "You are a helpful assistant that manages React ChatBotify services. "
     "You can help users by providing information about the services, their health status, "
-    "and perform troubleshooting steps such as restarting services. These are the names of "
-    "the available services: {services}"
+    "and performing troubleshooting steps such as restarting services. Feel free to be "
+    "expressive with emojis such as ✅ or ❌. You will strictly only manage the following "
+    "available services: {services}\n"
 )
 
 
 class CommandCenterAgent:
     """
     The CommandCenterAgent class for interacting with the Google Gemini API and MCP server.
+
+    We're currently not using a persistent session - not great, but acceptable for our use case
+    where operations are infrequent. Have explored a bit on persistent session but unable to
+    get it to work. Facing a similar issue as what is mentioned in this post:
+    https://stackoverflow.com/questions/79692462/fastmcp-client-timing-out-while-initializing-the-session
+
+    todo: we should revisit the above further down the road.
     """
 
     def __init__(self):
@@ -133,21 +141,59 @@ class CommandCenterAgent:
                     ),
                 )
 
-                # send the user message and await the final assistant reply
-                response = await chat.send_message(user_request)
+                try:
+                    # send the user message and await the final assistant reply
+                    response = await chat.send_message(self.system_context + user_request)
 
-                # now collect every function_call + tool response from the history
-                actions: list[dict] = []
-                # history = await chat.history_async()
-                # for msg in history:
-                #     if msg.role == "model" and msg.parts[0].function_call:
-                #         function_call = msg.parts[0].function_call
-                #         actions.append({"name": function_call.name, "args": dict(function_call.args)})
-                #     if msg.role == "tool":
-                #         result_text = ""
-                #         if isinstance(msg.content, types.TextContent):
-                #             result_text = msg.content.text
-                #         actions.append({"tool": msg.name, "result": result_text})
+                except Exception as e:
+                    console_logger.error(f"A 500 Internal Server Error occurred with the Gemini API: {e}")
 
-                # finally return (assistant_text, actions_list)
+                    # return user-friendly message for unexpected errors
+                    error_message = (
+                        "I'm sorry, but I encountered a temporary problem with the AI service "
+                        "while processing your request. This is usually a transient issue. "
+                        "Please try again in a moment."
+                    )
+                    return error_message, []
+
+                # retrieve actions performed by the agent
+                actions = self._extract_actions_from_history(chat.get_history())
+
                 return response.text, actions
+
+    def _extract_actions_from_history(self, history: list[Content]) -> list[dict]:
+        """
+        Parse the chat history to extract all function calls and their results.
+
+        Args:
+            history: The conversation history from the Gemini chat session.
+
+        Returns:
+            A list of dictionaries, where each dictionary represents an action taken.
+
+        """
+        actions: list[dict] = []
+        for i, msg in enumerate(history):
+            # a function call is initiated by the 'model', and the results are in the next message
+            if msg.role == "model" and msg.parts and (i + 1) < len(history):
+                next_msg = history[i + 1]
+
+                # ensure the next message is the tool response, which has a 'user' role
+                if next_msg.role == "user" and next_msg.parts:
+
+                    # extract function calls, skip any parts that don't contain a valid function_call object
+                    function_calls = [part.function_call for part in msg.parts if part.function_call]
+
+                    # extract function responses, skip any parts that don't contain a valid function_response object
+                    function_responses = [part.function_response for part in next_msg.parts if part.function_response]
+
+                    # pair up the calls and responses
+                    for call, response_part in zip(function_calls, function_responses):
+                        if call.name == response_part.name:
+                            action = {
+                                "name": call.name,
+                                "args": dict(call.args),
+                                "result": response_part.response,
+                            }
+                            actions.append(action)
+        return actions
