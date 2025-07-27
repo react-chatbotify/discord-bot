@@ -44,6 +44,10 @@ class WebServer:
             aiohttp.web.Response: A simple HTTP response confirming receipt.
 
         """
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or auth_header != os.getenv("HEALTHCHECKS_WEBHOOK_TOKEN"):
+            return web.Response(text="Unauthorized", status=401)
+
         data = await request.json()
         self.bot.dispatch("service_issue_event", data)
         return web.Response(text="Event received")
