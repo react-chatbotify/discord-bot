@@ -11,6 +11,9 @@ from mcp.client.streamable_http import streamablehttp_client
 
 from bot.config.command_center import command_center_config
 from bot.models.prompt import Prompt
+from bot.primitives.tools.get_service_health import get_service_health
+from bot.primitives.tools.restart_service import restart_service
+from bot.primitives.tools.trigger_user import trigger_user
 from bot.utils.console_logger import console_logger
 
 SYSTEM_CONTEXT = (
@@ -126,7 +129,7 @@ class CommandCenterAgent:
                     model=command_center_config.gemini_model,
                     config=GenerateContentConfig(
                         temperature=0,
-                        tools=[session],
+                        tools=[get_service_health, restart_service, trigger_user],
                     ),
                 )
 
