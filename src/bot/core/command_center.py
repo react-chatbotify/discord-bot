@@ -58,16 +58,17 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message):
     # handles the case where the user just mentions the bot without any additional text
     # we'll also only prompt if this is happening inside the main command center channel
     if not user_request and not isinstance(message.channel, discord.Thread):
-        prompts = agent.user_prompts
-        if prompts:
-            await PromptsManager.send_prompt(
-                channel=message.channel,
-                message="Perhaps I can help you with the following:",
-                prompts=prompts,
-            )
-        else:
-            await message.channel.send("What would you like me to help you with today?")
-        return
+        async with message.channel.typing():
+            prompts = agent.user_prompts
+            if prompts:
+                await PromptsManager.send_prompt(
+                    channel=message.channel,
+                    message="Perhaps I can help you with the following:",
+                    prompts=prompts,
+                )
+            else:
+                await message.channel.send("What would you like me to help you with today?")
+            return
 
     thread = message.channel if isinstance(message.channel, discord.Thread) else None
     if not thread:
@@ -76,7 +77,8 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message):
         thread = await message.create_thread(name=thread_name)
 
     # lets agent handle the request and return a response text along with actions taken
-    response_text, actions = await agent.get_agent_response(message, thread)
+    async with thread.typing():
+        response_text, actions = await agent.get_agent_response(message, thread)
 
     # log the actions taken by the agent
     if actions:
