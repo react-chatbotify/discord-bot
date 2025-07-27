@@ -23,6 +23,10 @@ class McpPromptLoader:
     def load_prompts(prompts: List[Prompt]):
         """
         Register all prompt callbacks/views.
+
+        Args:
+            prompts (List[Prompt]): A list of prompts to be loaded.
+
         """
         # register callbacks
         for prompt in prompts:
@@ -32,6 +36,10 @@ class McpPromptLoader:
     def unload_prompts(prompts: List[Prompt]):
         """
         Unregister all prompt callbacks/views.
+
+        Args:
+            prompts (List[Prompt]): A list of prompts to be unloaded.
+
         """
         # unregister callbacks
         for prompt in prompts:

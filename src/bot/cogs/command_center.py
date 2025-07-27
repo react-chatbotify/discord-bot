@@ -49,6 +49,10 @@ class CommandCenter(commands.Cog):
     async def on_message(self, message: discord.Message):
         """
         Trigger MCP logic when a message is sent in the command center channel and the bot is mentioned.
+
+        Args:
+            message (discord.Message): The message that triggered the event.
+
         """
         # Ignore bot's own messages
         if message.author.bot:

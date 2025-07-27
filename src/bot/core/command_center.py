@@ -21,6 +21,12 @@ from bot.ui.prompts.prompts_manager import PROMPT_ID_TO_TEXT_MAPPING, PromptsMan
 async def handle_webhook_input(bot: commands.Bot, channel: discord.TextChannel, data: dict):
     """
     Entry point for webhook sent to the command center.
+
+    Args:
+        bot (commands.Bot): The Discord bot instance.
+        channel (discord.TextChannel): The channel to send messages to.
+        data (dict): The webhook data.
+
     """
     if data.get("type", "").lower() == "service_down":
         msg = await channel.send(

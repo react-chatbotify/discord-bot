@@ -121,9 +121,15 @@ class CommandCenterAgent:
         """
         Send the user's request to Gemini with automatic function‐calling.
 
-        then returns a tuple of:
-          1) the assistant's final text
-          2) a list of all actions taken, e.g. [{"name": ..., "args": ...}, {"tool": ..., "result": ...}, ...]
+        Args:
+            message (discord.Message): The user's message to the agent.
+            thread (discord.Thread): The thread where the conversation is happening.
+
+        Returns:
+            tuple[str, list[dict]]: A tuple of:
+                1) the assistant's final text
+                2) a list of all actions taken, e.g. [{"name": ..., "args": ...}, {"tool": ..., "result": ...}, ...]
+
         """
         async with streamablehttp_client(command_center_config.mcp_server_url, headers=self.headers) as (
             read_stream,
@@ -172,6 +178,9 @@ class CommandCenterAgent:
 
         Args:
             thread: The thread to get history for.
+
+        Returns:
+            list[dict]: A list of dictionaries representing the message history.
 
         """
         history = []

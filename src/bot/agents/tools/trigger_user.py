@@ -27,6 +27,9 @@ async def trigger_user(message: str) -> Dict:
     Args:
         message (str): The message to send to user.
 
+    Returns:
+        Dict: A dictionary containing the result of the operation.
+
     """
     async with streamablehttp_client(command_center_config.mcp_server_url, headers=headers) as (
         read_stream,

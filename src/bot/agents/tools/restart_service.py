@@ -27,6 +27,9 @@ async def restart_service(service_name: str) -> Dict:
     Args:
         service_name (str): The name of the service to restart.
 
+    Returns:
+        Dict: A dictionary containing the result of the operation.
+
     """
     async with streamablehttp_client(command_center_config.mcp_server_url, headers=headers) as (
         read_stream,
