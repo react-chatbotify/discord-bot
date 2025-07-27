@@ -7,6 +7,7 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 """
 
 import traceback
+from datetime import datetime, timezone
 
 import discord
 from discord.ext import commands
@@ -70,7 +71,8 @@ class CommandCenter(commands.Cog):
 
         # If the message is not in a thread, create a new thread
         if not isinstance(message.channel, discord.Thread):
-            thread_name = f"🤖-issue-{message.id}"
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M")
+            thread_name = f"🤖-{timestamp}"
             thread = await message.create_thread(name=thread_name)
         else:
             thread = message.channel

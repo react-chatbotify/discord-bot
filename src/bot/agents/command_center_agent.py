@@ -142,12 +142,13 @@ class CommandCenterAgent:
                     config=GenerateContentConfig(
                         temperature=0,
                         tools=[get_service_health, restart_service, trigger_user],
+                        system_instruction=self.system_context,
                     ),
                 )
 
                 try:
                     # send the user message and await the final assistant reply
-                    response = await chat.send_message(self.system_context + message.content)
+                    response = await chat.send_message(message.content)
 
                 except Exception as e:
                     console_logger.error(f"A 500 Internal Server Error occurred with the Gemini API: {e}")
