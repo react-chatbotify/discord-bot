@@ -4,6 +4,7 @@ Defines the Agent class for interacting with the Google Gemini API and MCP serve
 
 import json
 
+import discord
 from google import genai
 from google.genai.types import Content, GenerateContentConfig
 from mcp import ClientSession, types
@@ -116,7 +117,7 @@ class CommandCenterAgent:
                 console_logger.info("Final System Context:")
                 console_logger.info(self.system_context)
 
-    async def get_agent_response(self, user_request: str) -> tuple[str, list[dict]]:
+    async def get_agent_response(self, message: discord.Message, thread: discord.Thread) -> tuple[str, list[dict]]:
         """
         Send the user's request to Gemini with automatic function‐calling.
 
@@ -132,9 +133,12 @@ class CommandCenterAgent:
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
 
+                history = await self._get_thread_history(thread)
+
                 # set up Gemini with auto function‐calling
                 chat = self.client.aio.chats.create(
                     model=command_center_config.gemini_model,
+                    history=history,
                     config=GenerateContentConfig(
                         temperature=0,
                         tools=[get_service_health, restart_service, trigger_user],
@@ -143,7 +147,7 @@ class CommandCenterAgent:
 
                 try:
                     # send the user message and await the final assistant reply
-                    response = await chat.send_message(self.system_context + user_request)
+                    response = await chat.send_message(self.system_context + message.content)
 
                 except Exception as e:
                     console_logger.error(f"A 500 Internal Server Error occurred with the Gemini API: {e}")
@@ -160,6 +164,25 @@ class CommandCenterAgent:
                 actions = self._extract_actions_from_history(chat.get_history())
 
                 return response.text, actions
+
+    async def _get_thread_history(self, thread: discord.Thread) -> list[dict]:
+        """
+        Fetch and format the message history from a discord thread.
+
+        Args:
+            thread: The thread to get history for.
+
+        """
+        history = []
+        async for msg in thread.history(limit=command_center_config.agent_history_size):
+            if msg.content.strip() == "":
+                continue
+            role = "user" if msg.author.id != thread.me.id else "model"
+            history.append({"role": role, "parts": [{"text": msg.content}]})
+
+        # reverse the history to have the oldest message first
+        history.reverse()
+        return history
 
     def _extract_actions_from_history(self, history: list[Content]) -> list[dict]:
         """

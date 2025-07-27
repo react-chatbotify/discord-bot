@@ -54,18 +54,31 @@ class CommandCenter(commands.Cog):
         if message.author.bot:
             return
 
-        # Only act in the command center channel
-        if message.channel.id != int(command_center_config.command_center_channel_id):
+        # Only act in the command center channel or its threads
+        if not (
+            message.channel.id == int(command_center_config.command_center_channel_id)
+            or (
+                isinstance(message.channel, discord.Thread)
+                and message.channel.parent_id == int(command_center_config.command_center_channel_id)
+            )
+        ):
             return
 
-        # Only proceed if the bot is mentioned
-        if self.bot.user not in message.mentions:
+        # Only proceed if the bot is mentioned or message is in a command center thread
+        if self.bot.user not in message.mentions and not isinstance(message.channel, discord.Thread):
             return
 
-        response = await handle_message_input(self.bot, message)
+        # If the message is not in a thread, create a new thread
+        if not isinstance(message.channel, discord.Thread):
+            thread_name = f"🤖-issue-{message.id}"
+            thread = await message.create_thread(name=thread_name)
+        else:
+            thread = message.channel
+
+        response = await handle_message_input(self.bot, message, thread)
 
         if response:
-            await message.channel.send(response)
+            await thread.send(response)
 
     @commands.Cog.listener()
     async def on_service_issue_event(self, data: dict):

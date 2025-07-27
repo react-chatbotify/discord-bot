@@ -39,6 +39,10 @@ class CommandCenterConfig(BaseSettings):
         default="",
         description="The token for the MCP server.",
     )
+    agent_history_size: int = Field(
+        default=30,
+        description="The maximum number of messages to keep in the agent's history.",
+    )
 
 
 command_center_config = CommandCenterConfig()

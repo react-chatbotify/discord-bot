@@ -28,10 +28,11 @@ async def handle_prompt_input(interaction: discord.Interaction) -> Optional[str]
         interaction (discord.Interaction): The interaction that triggered the prompt.
 
     """
-    await handle_message_input(interaction.client, interaction.message)
+    message = interaction.message
+    await handle_message_input(interaction.client, message, message.thread)
 
 
-async def handle_message_input(bot: commands.Bot, message: discord.Message) -> Optional[str]:
+async def handle_message_input(bot: commands.Bot, message: discord.Message, thread: discord.Thread) -> Optional[str]:
     """
     Get an AI-generated response for the given message content.
 
@@ -41,6 +42,7 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message) -> O
     Args:
         bot: The Discord bot instance.
         message (discord.Message): The message input provided.
+        thread: The thread to handle message input in
 
     Returns:
         Optional[str]: The AI-generated response, or None if no response should be sent.
@@ -65,7 +67,7 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message) -> O
         return
 
     # lets agent handle the request and return a response text along with actions taken
-    response_text, actions = await agent.get_agent_response(user_request)
+    response_text, actions = await agent.get_agent_response(message, thread)
 
     # log the actions taken by the agent
     if actions:
@@ -91,6 +93,7 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message) -> O
         # todo: add toggle for verbosity?
         await EmbedsManager.send_embed(
             await bot.get_context(message),
+            channel=thread,
             title="⚙️ Agent Actions",
             description="\n".join(action_descriptions),
             color=discord.Color.blue().value,
