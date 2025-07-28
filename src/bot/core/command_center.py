@@ -29,11 +29,21 @@ async def handle_webhook_input(bot: commands.Bot, channel: discord.TextChannel, 
 
     """
     if data.get("type", "").lower() == "service_down":
-        msg = await channel.send(
-            f"<@{bot.user.id}> A service appears to have gone down. You must first check the service "
-            f"to verify if it is indeed down. If so, you should attempt to troubleshoot and bring the "
-            f"service back up. If unsuccessful, you should alert the user. Here are the details:\n"
-            f"{data.get('message', 'Service down detected.')}"
+        webhooks = await channel.webhooks()
+        webhook = discord.utils.get(webhooks, name="Alert Webhook")
+        if webhook is None:
+            webhook = await channel.create_webhook(name="Alert Webhook")
+
+        msg = await webhook.send(
+            content=(
+                f"<@{bot.user.id}> A service appears to have gone down. You must first check the service "
+                f"to verify if it is indeed down. If so, you should attempt to troubleshoot and bring the "
+                f"service back up. If unsuccessful, you should alert the user. Here are the details:\n"
+                f"{data.get('message', 'Service down detected.')}"
+            ),
+            username="🚨 Alert",
+            avatar_url="http://cdn-icons-png.flaticon.com/512/5585/5585025.png",
+            wait=True,
         )
         await handle_message_input(bot, msg)
     else:
