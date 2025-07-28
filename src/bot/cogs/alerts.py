@@ -8,7 +8,6 @@ from discord.ext import commands
 
 from bot.config.command_center import command_center_config
 from bot.core.alerts import handle_webhook_input
-from bot.utils.console_logger import console_logger
 
 
 class AlertsCog(commands.Cog):

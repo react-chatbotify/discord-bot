@@ -9,7 +9,6 @@ from discord.ext import commands
 
 from bot.agents.instructions import AGENT_INSTRUCTIONS
 from bot.core.command_center import handle_message_input
-from bot.utils.console_logger import console_logger
 
 
 async def _send_service_alert(bot: commands.Bot, channel: discord.TextChannel, alert_type: str, message: str) -> None:
