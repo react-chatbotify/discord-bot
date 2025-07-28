@@ -9,6 +9,8 @@ import os
 
 from aiohttp import web
 
+from bot.config.alerts import alerts_config
+
 
 class WebServer:
     """
@@ -31,7 +33,7 @@ class WebServer:
         self.bot = bot
         self.app = web.Application()
         # todo: maybe move api version into a separate file or abstract urls to a constant file
-        self.app.add_routes([web.post("/api/v1/webhooks/service-issue", self.handle_request)])
+        self.app.add_routes([web.post("/api/v1/webhooks/service", self.handle_request)])
 
     async def handle_request(self, request):
         """
@@ -50,13 +52,13 @@ class WebServer:
             return web.Response(text="Unauthorized", status=401)
 
         token = auth_header.split("Bearer ")[1].strip()
-        expected_token = os.getenv("HEALTHCHECKS_WEBHOOK_TOKEN")
+        expected_token = alerts_config.webhook_alerts_token
 
         if token != expected_token:
             return web.Response(text="Unauthorized", status=401)
 
         data = await request.json()
-        self.bot.dispatch("service_issue_event", data)
+        self.bot.dispatch("webhook_alert_event", data)
         return web.Response(text="Event received")
 
     async def start(self):

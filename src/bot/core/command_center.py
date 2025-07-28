@@ -18,39 +18,6 @@ from bot.ui.embeds.embeds_manager import EmbedsManager
 from bot.ui.prompts.prompts_manager import PROMPT_ID_TO_TEXT_MAPPING, PromptsManager
 
 
-async def handle_webhook_input(bot: commands.Bot, channel: discord.TextChannel, data: dict):
-    """
-    Entry point for webhook sent to the command center.
-
-    Args:
-        bot (commands.Bot): The Discord bot instance.
-        channel (discord.TextChannel): The channel to send messages to.
-        data (dict): The webhook data.
-
-    """
-    if data.get("type", "").lower() == "service_down":
-        webhooks = await channel.webhooks()
-        webhook = discord.utils.get(webhooks, name="Alert Webhook")
-        if webhook is None:
-            webhook = await channel.create_webhook(name="Alert Webhook")
-
-        msg = await webhook.send(
-            content=(
-                f"<@{bot.user.id}> A service appears to have gone down. You must first check the service "
-                f"to verify if it is indeed down. If so, you should attempt to troubleshoot and bring the "
-                f"service back up. If unsuccessful, you should alert the user. Here are the details:\n"
-                f"{data.get('message', 'Service down detected.')}"
-            ),
-            username="🚨 Alert",
-            avatar_url="http://cdn-icons-png.flaticon.com/512/5585/5585025.png",
-            wait=True,
-        )
-        await handle_message_input(bot, msg)
-    else:
-        message = data.get("message", "No message provided.")
-        await channel.send(f"Webhook event received: {message}")
-
-
 async def handle_prompt_input(interaction: discord.Interaction, custom_id: str) -> Optional[str]:
     """
     Entry point for handling prompt-based interactions via Discord UI components.
@@ -68,7 +35,7 @@ async def handle_prompt_input(interaction: discord.Interaction, custom_id: str) 
     await handle_message_input(interaction.client, interaction.message)
 
 
-async def handle_message_input(bot: commands.Bot, message: discord.Message):
+async def handle_message_input(bot: commands.Bot, message: discord.Message, is_alert: bool = False):
     """
     Get an AI-generated response for the given message content.
 
@@ -78,6 +45,7 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message):
     Args:
         bot: The Discord bot instance.
         message (discord.Message): The message input provided.
+        is_alert (bool): boolean indicating whether the input is from an alert
 
     Returns:
         Optional[str]: The AI-generated response, or None if no response should be sent.
@@ -90,7 +58,7 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message):
 
     # handles the case where the user just mentions the bot without any additional text
     # we'll also only prompt if this is happening inside the main command center channel
-    if not user_request and not isinstance(message.channel, discord.Thread):
+    if not user_request and not isinstance(message.channel, discord.Thread) and not is_alert:
         async with message.channel.typing():
             prompts = agent.user_prompts
             if prompts:
@@ -111,7 +79,11 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message):
 
     # lets agent handle the request and return a response text along with actions taken
     async with thread.typing():
-        response_text, actions = await agent.get_agent_response(message, thread)
+        if is_alert:
+            user_input = message.embeds[0].description
+        else:
+            user_input = message.content
+        response_text, actions = await agent.get_agent_response(user_input, thread)
 
     # log the actions taken by the agent
     if actions:

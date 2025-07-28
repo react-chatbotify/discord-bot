@@ -10,20 +10,13 @@ from google.genai.types import Content, GenerateContentConfig
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
 
+from bot.agents.instructions import AGENT_INSTRUCTIONS
 from bot.agents.tools.get_service_health import get_service_health
 from bot.agents.tools.restart_service import restart_service
 from bot.agents.tools.trigger_user import trigger_user
 from bot.config.command_center import command_center_config
 from bot.models.prompt import Prompt
 from bot.utils.console_logger import console_logger
-
-SYSTEM_CONTEXT = (
-    "You are a helpful assistant that manages React ChatBotify services. "
-    "You can help users by providing information about the services, their health status, "
-    "and performing troubleshooting steps such as restarting services. Feel free to be "
-    "expressive with emojis such as ✅ or ❌. You will strictly only manage the following "
-    "available services: {services}\n"
-)
 
 
 class CommandCenterAgent:
@@ -112,17 +105,17 @@ class CommandCenterAgent:
                 services_string = ", ".join(services_list)
 
                 # Replace in SYSTEM_CONTEXT
-                self.system_context = SYSTEM_CONTEXT.replace("{services}", services_string)
+                self.system_context = AGENT_INSTRUCTIONS["system_context"].replace("{services}", services_string)
 
                 console_logger.info("Final System Context:")
                 console_logger.info(self.system_context)
 
-    async def get_agent_response(self, message: discord.Message, thread: discord.Thread) -> tuple[str, list[dict]]:
+    async def get_agent_response(self, user_input: str, thread: discord.Thread) -> tuple[str, list[dict]]:
         """
         Send the user's request to Gemini with automatic function‐calling.
 
         Args:
-            message (discord.Message): The user's message to the agent.
+            user_input (str): The user input to the agent.
             thread (discord.Thread): The thread where the conversation is happening.
 
         Returns:
@@ -154,7 +147,7 @@ class CommandCenterAgent:
 
                 try:
                     # send the user message and await the final assistant reply
-                    response = await chat.send_message(message.content)
+                    response = await chat.send_message(user_input)
 
                 except Exception as e:
                     console_logger.error(f"A 500 Internal Server Error occurred with the Gemini API: {e}")
