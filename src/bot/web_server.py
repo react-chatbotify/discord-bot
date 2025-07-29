@@ -10,6 +10,7 @@ import os
 from aiohttp import web
 
 from bot.config.alerts import alerts_config
+from bot.utils.console_logger import console_logger
 
 
 class WebServer:
@@ -49,12 +50,14 @@ class WebServer:
         auth_header = request.headers.get("Authorization")
 
         if not auth_header or not auth_header.startswith("Bearer "):
+            console_logger.info("An unauthorized webhook request was made.")
             return web.Response(text="Unauthorized", status=401)
 
         token = auth_header.split("Bearer ")[1].strip()
         expected_token = alerts_config.webhook_alerts_token
 
         if token != expected_token:
+            console_logger.info("An unauthorized webhook request was made.")
             return web.Response(text="Unauthorized", status=401)
 
         data = await request.json()
