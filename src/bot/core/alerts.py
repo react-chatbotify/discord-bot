@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from bot.agents.instructions import AGENT_INSTRUCTIONS
+from bot.config.alerts import alerts_config
 from bot.core.command_center import handle_message_input
 
 
@@ -29,7 +30,9 @@ async def _send_service_alert(bot: commands.Bot, channel: discord.TextChannel, a
 
     instruction = AGENT_INSTRUCTIONS[alert_type]
     content = f"<@{bot.user.id}> {instruction} Here are the details:\n" f"{message}"
-    alert_embed = discord.Embed(title="Alert", description=content, color=discord.Color.yellow())
+    alert_embed = discord.Embed(
+        title="Alert", description=content, color=alerts_config.alert_colors.get(alert_type, discord.Color.yellow())
+    )
 
     msg = await webhook.send(
         username="🚨 Alert",
