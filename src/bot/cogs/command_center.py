@@ -11,7 +11,7 @@ import traceback
 import discord
 from discord.ext import commands
 
-from bot.agents.command_center_agent import CommandCenterAgent
+from bot.agents.agent_manager import AgentManager
 from bot.config.command_center import command_center_config
 from bot.core.command_center import handle_message_input
 from bot.prompt_loaders.mcp import McpPromptLoader
@@ -33,7 +33,8 @@ class CommandCenter(commands.Cog):
 
         """
         self.bot = bot
-        self.agent = CommandCenterAgent()
+        self.agent_manager = AgentManager(bot)
+        self.agent = self.agent_manager.command_center_agent
         self._prompts_initialized = False
 
     def cog_unload(self):
@@ -41,6 +42,7 @@ class CommandCenter(commands.Cog):
         Unload the cog and release embedded resources.
         """
         McpPromptLoader.unload_prompts(self.agent.user_prompts)
+        self.agent_manager = None
         self.agent = None
         self._prompts_initialized = False
 

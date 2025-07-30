@@ -43,6 +43,10 @@ class CommandCenterConfig(BaseSettings):
         default=30,
         description="The maximum number of messages to keep in the agent's history.",
     )
+    insights_channel_id: int = Field(
+        default=0,
+        description="The Discord channel ID where insights are stored.",
+    )
 
 
 command_center_config = CommandCenterConfig()

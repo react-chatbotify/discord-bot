@@ -11,6 +11,7 @@ from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
 
 from bot.agents.instructions import AGENT_INSTRUCTIONS
+from bot.agents.support_agent import SupportAgent
 from bot.agents.tools.get_service_health import get_service_health
 from bot.agents.tools.restart_service import restart_service
 from bot.agents.tools.trigger_user import trigger_user
@@ -31,7 +32,7 @@ class CommandCenterAgent:
     todo: we should revisit the above further down the road.
     """
 
-    def __init__(self):
+    def __init__(self, bot: discord.Client, support_agent: SupportAgent):
         """
         Initialize the CommandCenterAgent.
 
@@ -43,6 +44,7 @@ class CommandCenterAgent:
         self.user_prompts: list[Prompt] = []
         self.headers = {"Authorization": f"Bearer {command_center_config.mcp_server_token}"}
         self.client = genai.Client()
+        self.support_agent = support_agent
 
     async def load_all_prompts(self):
         """
@@ -81,7 +83,7 @@ class CommandCenterAgent:
                                 content=txt or "",
                             )
                         )
-
+                        
     async def set_system_context(self):
         """
         Set system context after fetching list of services from the MCP server.
@@ -109,6 +111,16 @@ class CommandCenterAgent:
 
                 console_logger.info("Final System Context:")
                 console_logger.info(self.system_context)
+
+
+    def get_available_tools(self) -> list[str]:
+        """
+        Get the available tools.
+
+        Returns:
+            list[str]: A list of the available tools.
+        """
+        return [get_service_health.__name__, restart_service.__name__, trigger_user.__name__]
 
     async def get_agent_response(self, user_input: str, thread: discord.Thread) -> tuple[str, list[dict]]:
         """
