@@ -6,16 +6,11 @@ to communicate with Google Gemini, which in turn has access to a remote MCP
 (Model Context Protocol) server.
 """
 
-import traceback
-
 import discord
 from discord.ext import commands
 
-from bot.agents.agent_manager import AgentManager
 from bot.config.command_center import command_center_config
 from bot.core.command_center import handle_message_input
-from bot.prompt_loaders.mcp import McpPromptLoader
-from bot.utils.console_logger import console_logger
 
 
 class CommandCenter(commands.Cog):
@@ -33,18 +28,6 @@ class CommandCenter(commands.Cog):
 
         """
         self.bot = bot
-        self.agent_manager = AgentManager(bot)
-        self.agent = self.agent_manager.command_center_agent
-        self._prompts_initialized = False
-
-    def cog_unload(self):
-        """
-        Unload the cog and release embedded resources.
-        """
-        McpPromptLoader.unload_prompts(self.agent.user_prompts)
-        self.agent_manager = None
-        self.agent = None
-        self._prompts_initialized = False
 
     # todo: need to restrict to admin role?
     @commands.Cog.listener()
@@ -74,10 +57,14 @@ class CommandCenter(commands.Cog):
         if self.bot.user not in message.mentions and not isinstance(message.channel, discord.Thread):
             return
 
-        await handle_message_input(self.bot, message)
+        agents_cog = self.bot.get_cog("AgentsCog")
+        if not agents_cog:
+            return
+
+        await handle_message_input(agents_cog.agent_manager, message)
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: commands._Bot):
     """
     Set up the CommandCenterCog by adding it to the bot.
 
@@ -85,18 +72,4 @@ async def setup(bot: commands.Bot):
         bot (commands.Bot): The bot instance to which the cog is added.
 
     """
-    cog = CommandCenter(bot)
-    await bot.add_cog(cog)  # Add cog first, so it's fully registered
-
-    # Now manually trigger loading of prompts and setting system context
-    try:
-        await cog.agent.load_all_prompts()
-        McpPromptLoader.load_prompts(cog.agent.user_prompts)
-        cog._prompts_initialized = True
-    except Exception:
-        console_logger.error(f"❌ Failed to load prompts:\n{traceback.format_exc()}")
-
-    try:
-        await cog.agent.set_system_context()
-    except Exception:
-        console_logger.error(f"❌ Failed to set system context:\n{traceback.format_exc()}")
+    await bot.add_cog(CommandCenter(bot))

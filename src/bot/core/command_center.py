@@ -13,8 +13,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from bot.agents.command_center_agent import CommandCenterAgent
-from bot.ui.embeds.embeds_manager import EmbedsManager
+from bot.agents.agent_manager import AgentManager
 from bot.ui.prompts.prompts_manager import PROMPT_ID_TO_TEXT_MAPPING, PromptsManager
 
 
@@ -32,10 +31,15 @@ async def handle_prompt_input(interaction: discord.Interaction, custom_id: str) 
     """
     # overwrite the message content with the mapping (default content is just the prompt question)
     interaction.message.content = PROMPT_ID_TO_TEXT_MAPPING[custom_id]
-    await handle_message_input(interaction.client, interaction.message)
+
+    agents_cog = interaction.client.get_cog("AgentsCog")
+    if not agents_cog:
+        return
+
+    await handle_message_input(agents_cog.agent_manager, interaction.message)
 
 
-async def handle_message_input(bot: commands.Bot, message: discord.Message, is_alert: bool = False):
+async def handle_message_input(agent_manager: AgentManager, message: discord.Message):
     """
     Get an AI-generated response for the given message content.
 
@@ -43,24 +47,17 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message, is_a
     the generated response if applicable.
 
     Args:
-        bot: The Discord bot instance.
+        agent_manager (AgentManager): The agent manager instance.
         message (discord.Message): The message input provided.
-        is_alert (bool): boolean indicating whether the input is from an alert
-
-    Returns:
-        Optional[str]: The AI-generated response, or None if no response should be sent.
 
     """
-    cog = bot.get_cog("CommandCenter")
-    if cog:
-        agent: CommandCenterAgent = cog.agent
-    user_request = message.content.replace(f"<@{bot.user.id}>", "").strip()
+    user_request = message.content.replace(f"<@{agent_manager.bot.user.id}>", "").strip()
 
     # handles the case where the user just mentions the bot without any additional text
     # we'll also only prompt if this is happening inside the main command center channel
-    if not user_request and not isinstance(message.channel, discord.Thread) and not is_alert:
+    if not user_request and not isinstance(message.channel, discord.Thread):
         async with message.channel.typing():
-            prompts = agent.user_prompts
+            prompts = agent_manager.command_center_agent.user_prompts
             if prompts:
                 await PromptsManager.send_prompt(
                     channel=message.channel,
@@ -77,44 +74,5 @@ async def handle_message_input(bot: commands.Bot, message: discord.Message, is_a
         thread_name = f"🤖-{timestamp}"
         thread = await message.create_thread(name=thread_name)
 
-    # lets agent handle the request and return a response text along with actions taken
     async with thread.typing():
-        if is_alert:
-            user_input = message.embeds[0].description
-        else:
-            user_input = message.content
-        response_text, actions = await agent.get_agent_response(user_input, thread)
-
-    # log the actions taken by the agent
-    if actions:
-        action_descriptions = []
-        for i, act in enumerate(actions):
-            # get the actual result from the action dictionary
-            result_text = act.get("result", "No result returned.")
-
-            # truncate the result if it's too long
-            if isinstance(result_text, (dict, list)):
-                result_text = str(result_text)
-            if len(result_text) > 200:
-                result_text = result_text[:200] + "..."
-
-            action_log = (
-                f"**{i+1}. Tool: `{act.get('name')}`**\n"
-                f"- **Args:** `{act.get('args')}`\n"
-                f"- **Result:** `{result_text}`\n"
-            )
-            action_descriptions.append(action_log)
-
-        # send agent actions as an embed for visual clarity
-        # todo: add toggle for verbosity?
-        await EmbedsManager.send_embed(
-            await bot.get_context(message),
-            channel=thread,
-            title="⚙️ Agent Actions",
-            description="\n".join(action_descriptions),
-            color=discord.Color.blue().value,
-            persistent=False,
-        )
-
-    if response_text:
-        await thread.send(response_text)
+        await agent_manager.handle_user_message(message.content, thread)

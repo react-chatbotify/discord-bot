@@ -5,17 +5,16 @@ Defines the Agent class for interacting with the Google Gemini API and MCP serve
 import json
 
 import discord
-from google import genai
-from google.genai.types import Content, GenerateContentConfig
+from google.genai.types import Content
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamablehttp_client
 
 from bot.agents.instructions import AGENT_INSTRUCTIONS
-from bot.agents.support_agent import SupportAgent
 from bot.agents.tools.get_service_health import get_service_health
 from bot.agents.tools.restart_service import restart_service
 from bot.agents.tools.trigger_user import trigger_user
 from bot.config.command_center import command_center_config
+from bot.llm.gemini import Gemini
 from bot.models.prompt import Prompt
 from bot.utils.console_logger import console_logger
 
@@ -32,7 +31,7 @@ class CommandCenterAgent:
     todo: we should revisit the above further down the road.
     """
 
-    def __init__(self, bot: discord.Client, support_agent: SupportAgent):
+    def __init__(self, bot: discord.Client):
         """
         Initialize the CommandCenterAgent.
 
@@ -43,8 +42,7 @@ class CommandCenterAgent:
         self.system_context: str = ""
         self.user_prompts: list[Prompt] = []
         self.headers = {"Authorization": f"Bearer {command_center_config.mcp_server_token}"}
-        self.client = genai.Client()
-        self.support_agent = support_agent
+        self.llm = Gemini(command_center_config.gemini_model)
 
     async def load_all_prompts(self):
         """
@@ -83,7 +81,7 @@ class CommandCenterAgent:
                                 content=txt or "",
                             )
                         )
-                        
+
     async def set_system_context(self):
         """
         Set system context after fetching list of services from the MCP server.
@@ -112,7 +110,6 @@ class CommandCenterAgent:
                 console_logger.info("Final System Context:")
                 console_logger.info(self.system_context)
 
-
     def get_available_tools(self) -> list[str]:
         """
         Get the available tools.
@@ -136,46 +133,20 @@ class CommandCenterAgent:
                 2) a list of all actions taken, e.g. [{"name": ..., "args": ...}, {"tool": ..., "result": ...}, ...]
 
         """
-        async with streamablehttp_client(command_center_config.mcp_server_url, headers=self.headers) as (
-            read_stream,
-            write_stream,
-            _,
-        ):
-            async with ClientSession(read_stream, write_stream) as session:
-                await session.initialize()
+        history = await self._get_thread_history(thread)
+        tools = [get_service_health, restart_service, trigger_user]
 
-                history = await self._get_thread_history(thread)
+        try:
+            response = await self.llm.generate_text(
+                user_input, history=history, tools=tools, system_instruction=self.system_context
+            )
+        except Exception as e:
+            console_logger.error(f"An error occurred with the Gemini API: {e}")
+            error_message = "I'm sorry, but I encountered a problem while processing your request. Please try again in a moment."
+            return error_message, []
 
-                # set up Gemini with auto function‐calling
-                chat = self.client.aio.chats.create(
-                    model=command_center_config.gemini_model,
-                    history=history,
-                    config=GenerateContentConfig(
-                        temperature=0,
-                        tools=[get_service_health, restart_service, trigger_user],
-                        system_instruction=self.system_context,
-                    ),
-                )
-
-                try:
-                    # send the user message and await the final assistant reply
-                    response = await chat.send_message(user_input)
-
-                except Exception as e:
-                    console_logger.error(f"A 500 Internal Server Error occurred with the Gemini API: {e}")
-
-                    # return user-friendly message for unexpected errors
-                    error_message = (
-                        "I'm sorry, but I encountered a temporary problem with the AI service "
-                        "while processing your request. This is usually a transient issue. "
-                        "Please try again in a moment."
-                    )
-                    return error_message, []
-
-                # retrieve actions performed by the agent
-                actions = self._extract_actions_from_history(chat.get_history())
-
-                return response.text, actions
+        actions = self._extract_actions_from_history(response.history)
+        return response.text, actions
 
     async def _get_thread_history(self, thread: discord.Thread) -> list[dict]:
         """

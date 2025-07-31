@@ -40,8 +40,13 @@ class AlertsCog(commands.Cog):
             channel = self.bot.get_channel(int(channel_id))
         if not channel:
             return
+
+        agents_cog = self.bot.get_cog("AgentsCog")
+        if not agents_cog:
+            return
+
         # handle service down event
-        await handle_webhook_input(self.bot, channel, data)
+        await handle_webhook_input(agents_cog.agent_manager, channel, data)
 
 
 async def setup(bot: commands.Bot):
